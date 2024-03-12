@@ -1,5 +1,5 @@
 /****************************************************************************\
-   Copyright 2021 Luca Beldi
+   Copyright 2024 Luca Beldi
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -11,23 +11,26 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef MAINOBJECT_H
-#define MAINOBJECT_H
-#include <QObject>
-class OfflineSqlTable;
-class MainObject : public QObject
+#ifndef OFFLINESQLTABLE_H
+#define OFFLINESQLTABLE_H
+#include "offlinesqlquerymodel.h"
+#include <QVector>
+#include <QVariant>
+class OfflineSqlTable : public OfflineSqlQueryModel
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainObject)
+    Q_DISABLE_COPY_MOVE(OfflineSqlTable)
 public:
-    explicit MainObject(QObject *parent = nullptr);
-    ~MainObject();
-    bool createBlankBudget();
-public slots:
-    void newBudget();
+    explicit OfflineSqlTable(QObject *parent = nullptr);
+    virtual void setTable(const QString &tableName);
+    virtual void setFilter(const QString &filter);
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+
 private:
-    void fillDefaultDbFields();
-    OfflineSqlTable* m_transactionsModel;
+    QSqlQuery createQuery() const;
+    QString m_tableName;
+    QString m_filter;
 };
 
 #endif

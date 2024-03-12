@@ -11,23 +11,16 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef MAINOBJECT_H
-#define MAINOBJECT_H
-#include <QObject>
-class OfflineSqlTable;
-class MainObject : public QObject
+#ifndef DECIMALDELEGATE_H
+#define DECIMALDELEGATE_H
+#include <QStyledItemDelegate>
+class DecimalDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainObject)
+    Q_DISABLE_COPY_MOVE(DecimalDelegate)
 public:
-    explicit MainObject(QObject *parent = nullptr);
-    ~MainObject();
-    bool createBlankBudget();
-public slots:
-    void newBudget();
-private:
-    void fillDefaultDbFields();
-    OfflineSqlTable* m_transactionsModel;
+    explicit DecimalDelegate(QObject *parent = nullptr);
+    QString displayText(const QVariant &value, const QLocale &locale) const override;
 };
 
 #endif

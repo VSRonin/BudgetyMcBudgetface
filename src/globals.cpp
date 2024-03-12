@@ -13,6 +13,7 @@
 #include "globals.h"
 #include <QStandardPaths>
 #include <QDir>
+#define DATABASE_NAME QStringLiteral("BudgetDB")
 QString makeStandardLocation(QStandardPaths::StandardLocation loc)
 {
     const QString stdLocation = QStandardPaths::writableLocation(loc);
@@ -31,17 +32,39 @@ QString appSettingsPath()
     return makeStandardLocation(QStandardPaths::AppConfigLocation);
 }
 
-QSqlDatabase openDb(const QString &dbName)
+QString dbFilePath(){
+    return appDataPath() + QDir::separator() + QLatin1String("CurrentBudget.sqlite");
+}
+
+QSqlDatabase openDb()
 {
-    QSqlDatabase db = QSqlDatabase::database(dbName, false);
-    if (!db.isValid()) {
-        const QString appDataLocation = appDataPath();
-        db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), dbName);
-        db.setDatabaseName(appDataLocation + QDir::separator() + QLatin1String("17helper.sqlite"));
-    }
+    QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
+    Q_ASSERT(db.isValid());
     bool DbOpen = db.isOpen();
     if (!DbOpen)
         DbOpen = db.open();
     Q_ASSERT(DbOpen);
     return db;
+}
+
+void discardDbFile()
+{
+    QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
+    if(db.isValid()){
+        if(db.isOpen())
+            db.close();
+        QSqlDatabase::removeDatabase(DATABASE_NAME);
+    }
+    const QString dbFileName = dbFilePath();
+    if(QFile::exists(dbFileName))
+        QFile::remove(dbFileName);
+}
+
+void createDbFile()
+{
+    QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
+    if (!db.isValid()) {
+        db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), DATABASE_NAME);
+        db.setDatabaseName(dbFilePath());
+    }
 }

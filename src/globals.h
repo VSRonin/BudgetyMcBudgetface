@@ -16,4 +16,7 @@
 #include <QObject>
 #include <QString>
 #include <QSqlDatabase>
-QSqlDatabase openDb(const QString &dbName);
+void discardDbFile();
+void createDbFile();
+QSqlDatabase openDb();
+#endif

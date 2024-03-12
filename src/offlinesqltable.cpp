@@ -1,0 +1,75 @@
+/****************************************************************************\
+   Copyright 2024 Luca Beldi
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+\****************************************************************************/
+#include "offlinesqltable.h"
+#include "globals.h"
+#include <QSqlQuery>
+#include <QSqlDriver>
+#include <QSqlRecord>
+OfflineSqlTable::OfflineSqlTable(QObject *parent)
+    : OfflineSqlQueryModel(parent)
+{ }
+
+bool OfflineSqlTable::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (!index.isValid())
+        return false;
+    if (role != Qt::DisplayRole && role != Qt::EditRole)
+        return false;
+    QSqlDatabase db = openDb();
+    QString selectQueryString = QLatin1String("UPDATE ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName) + QLatin1String(" SET ")
+            + db.driver()->escapeIdentifier(fieldName(index.column()), QSqlDriver::FieldName) + QLatin1String("=? WHERE ");
+    const int colCount = columnCount();
+    for (int i = 0; i < colCount; ++i) {
+        if (i > 0)
+            selectQueryString += QLatin1String("AND ");
+        selectQueryString += db.driver()->escapeIdentifier(fieldName(i), QSqlDriver::FieldName) + QLatin1String("=? ");
+    }
+    QSqlQuery selectQuery(db);
+    selectQuery.prepare(selectQueryString);
+    selectQuery.addBindValue(value);
+    for (int i = 0; i < colCount; ++i)
+        selectQuery.addBindValue(data(index.sibling(index.row(), i)));
+    if (selectQuery.exec()) {
+        setInternalData(index, value);
+        return true;
+    }
+    return false;
+}
+
+Qt::ItemFlags OfflineSqlTable::flags(const QModelIndex &index) const
+{
+    if (!index.isValid())
+        return OfflineSqlQueryModel::flags(index);
+    return OfflineSqlQueryModel::flags(index) | Qt::ItemIsEditable;
+}
+
+QSqlQuery OfflineSqlTable::createQuery() const
+{
+    QSqlDatabase db = openDb();
+    QSqlQuery selectQuery(db);
+    selectQuery.prepare(QLatin1String("SELECT * FROM ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName) + QLatin1String(" WHERE ")
+                        + m_filter);
+    return selectQuery;
+}
+
+void OfflineSqlTable::setTable(const QString &tableName)
+{
+    m_tableName = tableName;
+    setQuery(createQuery());
+}
+
+void OfflineSqlTable::setFilter(const QString &filter)
+{
+    m_filter = filter;
+    setQuery(createQuery());
+}

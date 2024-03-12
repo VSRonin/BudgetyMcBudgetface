@@ -10,24 +10,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
+#include "decimaldelegate.h"
+DecimalDelegate::DecimalDelegate(QObject *parent)
+    : QStyledItemDelegate(parent)
+{ }
 
-#ifndef MAINOBJECT_H
-#define MAINOBJECT_H
-#include <QObject>
-class OfflineSqlTable;
-class MainObject : public QObject
+QString DecimalDelegate::displayText(const QVariant &value, const QLocale &locale) const
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainObject)
-public:
-    explicit MainObject(QObject *parent = nullptr);
-    ~MainObject();
-    bool createBlankBudget();
-public slots:
-    void newBudget();
-private:
-    void fillDefaultDbFields();
-    OfflineSqlTable* m_transactionsModel;
-};
-
-#endif
+    return locale.toString(value.toDouble(), 'f', 2);
+}
