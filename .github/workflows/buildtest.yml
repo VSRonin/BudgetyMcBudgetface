@@ -80,14 +80,12 @@ jobs:
           - name: Build
             shell: pwsh
             run: |
-              $OldPath = [Environment]::GetEnvironmentVariable("PATH")
-              [Environment]::SetEnvironmentVariable("PATH","$pwd/QtModelUtilities;$OldPath")
               cd build/debug
-              cmake -G"${{ matrix.platforms.generator }}" -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_DEBUG_POSTFIX=d -DBUILD_TESTING=ON -DTEST_OUTPUT_XML=ON -DCMAKE_INSTALL_PREFIX="../installed" ../../
+              cmake -G"${{ matrix.platforms.generator }}" -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_PREFIX_PATH="$pwd/../../QtModelUtilities" -DCMAKE_DEBUG_POSTFIX=d -DBUILD_TESTING=ON -DTEST_OUTPUT_XML=ON -DCMAKE_INSTALL_PREFIX="../installed" ../../
               cmake --build .
               cmake --build . --target install
               cd ../release
-              cmake -G"${{ matrix.platforms.generator }}" -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_TESTING=ON -DTEST_OUTPUT_XML=ON -DCMAKE_INSTALL_PREFIX="../installed" ../../
+              cmake -G"${{ matrix.platforms.generator }}" -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_PREFIX_PATH="$pwd/../../QtModelUtilities" -DBUILD_TESTING=ON -DTEST_OUTPUT_XML=ON -DCMAKE_INSTALL_PREFIX="../installed" ../../
               cmake --build .
               cmake --build . --target install
           - name: Test
