@@ -47,14 +47,14 @@ jobs:
               tarBall: false
               zipBall: false
           - name: Adjust QtModelUtilitiesPath
+            shell: pwsh
             run: |
               cd QtModelUtilities
-              Set "FirstDir="
-              For /d %%D in ("./*") do If not defined FirstDir Set "FirstDir=%%D"
-              PushD "%FirstDir%"
-              For /d %%D in ("./*") do move %%D ../
+              $childItems = Get-ChildItem -Name -Directory
+              pushd "$childItems"
+              Get-ChildItem -Directory | Move-Item -Destination ../
               popd
-              rmdir "%FirstDir%"
+              Remove-Item "$childItems"
           - name: Install SQLite
             shell: pwsh
             run: choco install sqlite
@@ -80,7 +80,8 @@ jobs:
           - name: Build
             shell: pwsh
             run: |
-              set PATH=%cd%/QtModelUtilities;%PATH%
+              $OldPath = [Environment]::GetEnvironmentVariable("PATH")
+              [Environment]::SetEnvironmentVariable("PATH","$pwd/QtModelUtilities;$OldPath")
               cd build/debug
               cmake -G"${{ matrix.platforms.generator }}" -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_DEBUG_POSTFIX=d -DBUILD_TESTING=ON -DTEST_OUTPUT_XML=ON -DCMAKE_INSTALL_PREFIX="../installed" ../../
               cmake --build .
