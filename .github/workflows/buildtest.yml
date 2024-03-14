@@ -45,8 +45,8 @@ jobs:
           - name: Generate Default DB File
             shell: pwsh
             run: |
-            cd src\resources
-            sqlite3 defaultdb.sqlite ".read filldefaultdatabase.sql" ".exit"
+              cd src\resources
+              sqlite3 defaultdb.sqlite ".read filldefaultdatabase.sql" ".exit"
           - name: Create Build Directory
             shell: pwsh
             run: |
