@@ -1,17 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 find_package(Qt6 6.3 COMPONENTS Widgets Gui Core Sql REQUIRED)
-include(FetchContent)
-set(BUILD_SHARED_LIBS OFF)
-set(BUILD_TESTING OFF)
-set(BUILD_MODELSERIALISATION OFF)
-set(BUILD_ROOTINDEXPROXY OFF)
-set(BUILD_GENERICMODEL OFF)
-set(MODEL_UTILITIES_INSTALL OFF)
-FetchContent_Declare(QtModelUtilitiesFC
-    GIT_REPOSITORY https://github.com/VSRonin/QtModelUtilities.git
-    GIT_TAG master
-)
-FetchContent_MakeAvailable(QtModelUtilitiesFC)
+find_package(QtModelUtilities REQUIRED)
 set(ui_SRCS 
     mainwindow.cpp
     mainwindow.h

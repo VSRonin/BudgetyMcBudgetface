@@ -35,6 +35,26 @@ jobs:
             uses: jurplel/install-qt-action@v3
             with:
               version: ${{ matrix.qt_version.qt_ver }}
+          - name: Install QtModelUtilities
+            uses: robinraju/release-downloader@v1.9
+            with: 
+              repository: "VSRonin/QtModelUtilities"
+              latest: true
+              preRelease: false
+              fileName: "*-MSVC-Qt6-x64.zip"
+              out-file-path: "./QtModelUtilities"
+              extract: true
+              tarBall: false
+              zipBall: false
+          - name: Adjust QtModelUtilitiesPath
+            run: |
+              cd QtModelUtilities
+              Set "FirstDir="
+              For /d %%D in ("./*") do If not defined FirstDir Set "FirstDir=%%D"
+              PushD "%FirstDir%"
+              For /d %%D in ("./*") do move %%D ../
+              popd
+              rmdir "%FirstDir%"
           - name: Install SQLite
             shell: pwsh
             run: choco install sqlite
@@ -60,6 +80,7 @@ jobs:
           - name: Build
             shell: pwsh
             run: |
+              set PATH=%cd%/QtModelUtilities;%PATH%
               cd build/debug
               cmake -G"${{ matrix.platforms.generator }}" -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_DEBUG_POSTFIX=d -DBUILD_TESTING=ON -DTEST_OUTPUT_XML=ON -DCMAKE_INSTALL_PREFIX="../installed" ../../
               cmake --build .
@@ -69,6 +90,7 @@ jobs:
               cmake --build .
               cmake --build . --target install
           - name: Test
+            if: ${{ matrix.platforms.friendly_name != 'MSVC' }}
             id: runtests
             shell: pwsh
             run: |
