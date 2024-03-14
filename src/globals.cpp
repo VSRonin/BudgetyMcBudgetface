@@ -33,7 +33,7 @@ QString appSettingsPath()
 }
 
 QString dbFilePath(){
-    return appDataPath() + QDir::separator() + QLatin1String("CurrentBudget.sqlite");
+    return appDataPath() + QDir::separator() + QLatin1String("currentbudget.sqlite");
 }
 
 QSqlDatabase openDb()
@@ -62,9 +62,11 @@ void discardDbFile()
 
 void createDbFile()
 {
+    const QString destinationDB = dbFilePath();
+    QFile::copy(QStringLiteral(":/db/defaultdb.sqlite"),destinationDB);
     QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
     if (!db.isValid()) {
         db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), DATABASE_NAME);
-        db.setDatabaseName(dbFilePath());
+        db.setDatabaseName(destinationDB);
     }
 }

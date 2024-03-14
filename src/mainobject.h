@@ -26,7 +26,6 @@ public:
 public slots:
     void newBudget();
 private:
-    void fillDefaultDbFields();
     OfflineSqlTable* m_transactionsModel;
 };
 

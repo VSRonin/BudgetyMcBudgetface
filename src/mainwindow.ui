@@ -17,7 +17,7 @@
    <iconset>
     <normaloff>:/icons/17H.svg</normaloff>:/icons/17H.svg</iconset>
   </property>
-  <widget class="HubWidget" name="centralwidget"/>
+  <widget class="CentralWidget" name="centralwidget"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
@@ -86,9 +86,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>HubWidget</class>
+   <class>CentralWidget</class>
    <extends>QWidget</extends>
-   <header>hubwidget.h</header>
+   <header>centralwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

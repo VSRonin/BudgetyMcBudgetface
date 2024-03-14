@@ -15,7 +15,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    //Q_INIT_RESOURCE(resources);
+    Q_INIT_RESOURCE(backendresources);
     MainWindow w;
     w.show();
     return app.exec();

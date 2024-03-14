@@ -441,3 +441,5 @@ CMakeLists.txt.user*
 modeltest.cpp 
 modeltest.h 
 /RunClangFormat.bat
+/RebuildDefaultDB.bat
+/src/resources/defaultdb.sqlite

@@ -26,6 +26,7 @@ set(ui_SRCS
     settingsdialog.ui
 )
 set(backend_SRCS
+    backendresources.qrc
     globals.h
     globals.cpp
     mainobject.h
@@ -55,7 +56,8 @@ target_link_libraries(TestBudgetLib PUBLIC
 )
 set_target_properties(TestBudgetLib PROPERTIES
     AUTOMOC ON
-    CXX_STANDARD 11
+    AUTORCC ON
+    CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     VERSION ${VERSION_SHORT}
 )
@@ -71,7 +73,7 @@ set_target_properties(TestBudgetUiLib PROPERTIES
     AUTOMOC ON
     AUTOUIC ON
     AUTORCC ON
-    CXX_STANDARD 11
+    CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     VERSION ${VERSION_SHORT}
 )
@@ -83,7 +85,7 @@ target_link_libraries(TestBudget PUBLIC
 set_target_properties(TestBudget PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
-    CXX_STANDARD 11
+    CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     VERSION ${VERSION_SHORT}
 )
@@ -91,3 +93,8 @@ install(TARGETS TestBudget
     BUNDLE DESTINATION "TestBudget"
     RUNTIME DESTINATION "TestBudget"
 )
+qt_generate_deploy_app_script(
+    TARGET TestBudget
+    OUTPUT_SCRIPT deploy_script
+)
+install(SCRIPT ${deploy_script})
