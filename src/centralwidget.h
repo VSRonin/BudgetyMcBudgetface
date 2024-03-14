@@ -27,6 +27,7 @@ class CentralWidget : public QWidget
 public:
     explicit CentralWidget(QWidget *parent = nullptr);
     ~CentralWidget();
+
 private:
     MainObject *m_object;
     Ui::CentralWidget *ui;

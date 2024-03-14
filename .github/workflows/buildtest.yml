@@ -27,7 +27,7 @@ jobs:
           fail-fast: false
           matrix:
               qt_version:
-                - { qt_ver: 6.7.0 }
+                - { qt_ver: 6.5.3 }
               platforms:
                 - { os: windows-latest, generator: "NMake Makefiles", friendly_name: MSVC }
         steps:
@@ -35,10 +35,18 @@ jobs:
             uses: jurplel/install-qt-action@v3
             with:
               version: ${{ matrix.qt_version.qt_ver }}
+          - name: Install SQLite
+            shell: pwsh
+            run: choco install sqlite
           - name: Git Checkout
             uses: actions/checkout@v4
             with:
               fetch-depth: 0
+          - name: Generate Default DB File
+            shell: pwsh
+            run: |
+            cd src\resources
+            sqlite3 defaultdb.sqlite ".read filldefaultdatabase.sql" ".exit"
           - name: Create Build Directory
             shell: pwsh
             run: |

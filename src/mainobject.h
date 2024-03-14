@@ -25,8 +25,9 @@ public:
     bool createBlankBudget();
 public slots:
     void newBudget();
+
 private:
-    OfflineSqlTable* m_transactionsModel;
+    OfflineSqlTable *m_transactionsModel;
 };
 
 #endif

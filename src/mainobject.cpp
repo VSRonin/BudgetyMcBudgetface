@@ -18,14 +18,9 @@
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
     , m_transactionsModel(new OfflineSqlTable(this))
-{
+{ }
 
-}
-
-MainObject::~MainObject()
-{
-
-}
+MainObject::~MainObject() { }
 
 void MainObject::newBudget()
 {
@@ -33,5 +28,3 @@ void MainObject::newBudget()
     createDbFile();
     m_transactionsModel->setTable(QStringLiteral("Transactions"));
 }
-
-

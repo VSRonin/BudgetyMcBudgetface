@@ -32,7 +32,8 @@ QString appSettingsPath()
     return makeStandardLocation(QStandardPaths::AppConfigLocation);
 }
 
-QString dbFilePath(){
+QString dbFilePath()
+{
     return appDataPath() + QDir::separator() + QLatin1String("currentbudget.sqlite");
 }
 
@@ -50,20 +51,20 @@ QSqlDatabase openDb()
 void discardDbFile()
 {
     QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
-    if(db.isValid()){
-        if(db.isOpen())
+    if (db.isValid()) {
+        if (db.isOpen())
             db.close();
         QSqlDatabase::removeDatabase(DATABASE_NAME);
     }
     const QString dbFileName = dbFilePath();
-    if(QFile::exists(dbFileName))
+    if (QFile::exists(dbFileName))
         QFile::remove(dbFileName);
 }
 
 void createDbFile()
 {
     const QString destinationDB = dbFilePath();
-    QFile::copy(QStringLiteral(":/db/defaultdb.sqlite"),destinationDB);
+    QFile::copy(QStringLiteral(":/db/defaultdb.sqlite"), destinationDB);
     QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
     if (!db.isValid()) {
         db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), DATABASE_NAME);
