@@ -11,11 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>17 Helper</string>
-  </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>:/icons/17H.svg</normaloff>:/icons/17H.svg</iconset>
+   <string>Budgeter [*]</string>
   </property>
   <widget class="CentralWidget" name="centralwidget"/>
   <widget class="QMenuBar" name="menubar">

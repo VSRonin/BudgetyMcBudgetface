@@ -39,7 +39,14 @@ QString dbFilePath()
 
 QSqlDatabase openDb()
 {
+    const QString destinationDB = dbFilePath();
+    if (!QFile::exists(destinationDB))
+        return QSqlDatabase();
     QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
+    if (!db.isValid()) {
+        db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), DATABASE_NAME);
+        db.setDatabaseName(destinationDB);
+    }
     Q_ASSERT(db.isValid());
     bool DbOpen = db.isOpen();
     if (!DbOpen)
@@ -50,24 +57,25 @@ QSqlDatabase openDb()
 
 void discardDbFile()
 {
+    closeDb();
+    const QString dbFileName = dbFilePath();
+    qDebug().noquote() << dbFileName;
+    if (QFile::exists(dbFileName))
+        Q_ASSUME(QFile::remove(dbFileName));
+}
+void closeDb()
+{
     QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
     if (db.isValid()) {
         if (db.isOpen())
             db.close();
         QSqlDatabase::removeDatabase(DATABASE_NAME);
     }
-    const QString dbFileName = dbFilePath();
-    if (QFile::exists(dbFileName))
-        QFile::remove(dbFileName);
 }
 
 void createDbFile()
 {
     const QString destinationDB = dbFilePath();
-    QFile::copy(QStringLiteral(":/db/defaultdb.sqlite"), destinationDB);
-    QSqlDatabase db = QSqlDatabase::database(DATABASE_NAME, false);
-    if (!db.isValid()) {
-        db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), DATABASE_NAME);
-        db.setDatabaseName(destinationDB);
-    }
+    Q_ASSUME(QFile::copy(QStringLiteral(":/db/defaultdb.sqlite"), destinationDB));
+    Q_ASSUME(QFile::setPermissions(destinationDB, QFileDevice::ReadOwner | QFileDevice::WriteOwner));
 }

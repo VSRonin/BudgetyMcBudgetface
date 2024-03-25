@@ -15,7 +15,7 @@
 #define CENTRALWIDGET_H
 #include <QList>
 #include <QWidget>
-#include <mainobject.h>
+class MainObject;
 namespace Ui {
 class CentralWidget;
 }
@@ -27,6 +27,7 @@ class CentralWidget : public QWidget
 public:
     explicit CentralWidget(QWidget *parent = nullptr);
     ~CentralWidget();
+    void setMainObject(MainObject *mainObj);
 
 private:
     MainObject *m_object;

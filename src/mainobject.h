@@ -15,6 +15,8 @@
 #define MAINOBJECT_H
 #include <QObject>
 class OfflineSqlTable;
+class QAbstractItemModel;
+class QStandardItemModel;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -23,11 +25,29 @@ public:
     explicit MainObject(QObject *parent = nullptr);
     ~MainObject();
     bool createBlankBudget();
+    QAbstractItemModel *transactionsModel() const;
+    QAbstractItemModel *accountsModel() const;
+    QAbstractItemModel *categoriesModel() const;
+    QAbstractItemModel *currenciesModel() const;
+    QAbstractItemModel *accountTypesModel() const;
+    bool addAccount(const QString &name, const QString &owner, int curr, int typ);
+    bool isDirty() const;
 public slots:
     void newBudget();
+    bool saveBudget(const QString &path);
+    bool loadBudget(const QString &path);
+signals:
+    void dirtyChanged(bool dirty);
 
 private:
+    void setDirty(bool dirty);
+    void reselectModels();
     OfflineSqlTable *m_transactionsModel;
+    OfflineSqlTable *m_accountsModel;
+    OfflineSqlTable *m_categoriesModel;
+    QStandardItemModel *m_currenciesModel;
+    QStandardItemModel *m_accountTypesModel;
+    bool m_dirty;
 };
 
 #endif

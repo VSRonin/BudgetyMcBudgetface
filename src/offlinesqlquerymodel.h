@@ -23,7 +23,7 @@ class OfflineSqlQueryModel : public QAbstractTableModel
     Q_DISABLE_COPY_MOVE(OfflineSqlQueryModel)
 public:
     explicit OfflineSqlQueryModel(QObject *parent = nullptr);
-    virtual void setQuery(const QString &query, const QSqlDatabase &db);
+    virtual void setQuery(const QString &query);
     virtual void setQuery(QSqlQuery &&query);
     virtual bool select();
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;

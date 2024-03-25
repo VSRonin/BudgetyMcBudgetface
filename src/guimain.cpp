@@ -12,11 +12,13 @@
 \****************************************************************************/
 #include <QApplication>
 #include <mainwindow.h>
+#include <globals.h>
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     Q_INIT_RESOURCE(backendresources);
     MainWindow w;
     w.show();
+    QObject::connect(&app, &QApplication::lastWindowClosed, []() { discardDbFile(); });
     return app.exec();
 }

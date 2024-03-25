@@ -14,16 +14,23 @@
 #include "centralwidget.h"
 #include "ui_centralwidget.h"
 #include <globals.h>
-
+#include <mainobject.h>
 CentralWidget::CentralWidget(QWidget *parent)
     : QWidget(parent)
+    , m_object(nullptr)
     , ui(new Ui::CentralWidget)
 {
+
     ui->setupUi(this);
-    m_object = new MainObject(this);
 }
 
 CentralWidget::~CentralWidget()
 {
     delete ui;
+}
+
+void CentralWidget::setMainObject(MainObject *mainObj)
+{
+    m_object = mainObj;
+    ui->transactionsView->setModel(m_object ? m_object->transactionsModel() : nullptr);
 }

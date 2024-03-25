@@ -63,6 +63,7 @@ INSERT INTO Categories (Id, Name) VALUES
     (17,'Subscriptions'),
     (18,'Investment'),
     (19,'Debt')
+    (20,'Car')
 ;
 INSERT INTO Subcategories (Id, Category, Name, NeedWantSave) VALUES
     (0,0,'Internal Transfer',1),
@@ -124,5 +125,9 @@ INSERT INTO Subcategories (Id, Category, Name, NeedWantSave) VALUES
     (56,9,'Train',2),
     (57,18,'Investment',0),
     (58,19,'Debt',0)
+    (59,20,'Fuel',0)
+    (60,20,'Insurance',0)
+    (61,20,'Repair',0)
+    (62,20,'Tax',0)
 ;
 COMMIT;

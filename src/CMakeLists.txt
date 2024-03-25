@@ -13,6 +13,9 @@ set(ui_SRCS
     settingsdialog.h
     settingsdialog.cpp
     settingsdialog.ui
+    addaccountdialog.h
+    addaccountdialog.cpp
+    addaccountdialog.ui
 )
 set(backend_SRCS
     backendresources.qrc

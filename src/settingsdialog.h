@@ -6,7 +6,7 @@
 namespace Ui {
 class SettingsDialog;
 }
-
+class MainObject;
 class SettingsDialog : public QDialog
 {
     Q_OBJECT
@@ -14,8 +14,11 @@ class SettingsDialog : public QDialog
 public:
     explicit SettingsDialog(QWidget *parent = nullptr);
     ~SettingsDialog();
+    void setMainObject(MainObject *mainObj);
 
 private:
+    void onAddAccount();
+    MainObject *m_object;
     Ui::SettingsDialog *ui;
 };
 

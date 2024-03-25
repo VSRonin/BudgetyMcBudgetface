@@ -13,10 +13,13 @@
 
 #ifndef GLOBALS_H
 #define GLOBALS_H
+#define BUDGET_FILE_VERSION QByteArrayLiteral("1.0.0")
 #include <QObject>
 #include <QString>
 #include <QSqlDatabase>
 void discardDbFile();
 void createDbFile();
 QSqlDatabase openDb();
+void closeDb();
+QString dbFilePath();
 #endif

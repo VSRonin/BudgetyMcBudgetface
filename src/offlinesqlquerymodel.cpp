@@ -21,8 +21,11 @@ OfflineSqlQueryModel::OfflineSqlQueryModel(QObject *parent)
     , m_rowCount(0)
 { }
 
-void OfflineSqlQueryModel::setQuery(const QString &query, const QSqlDatabase &db)
+void OfflineSqlQueryModel::setQuery(const QString &query)
 {
+    QSqlDatabase db = openDb();
+    if (!db.isValid() || !db.isOpen())
+        return;
     QSqlQuery newQuery(db);
     newQuery.prepare(query);
     setQuery(std::move(newQuery));
@@ -100,12 +103,14 @@ QVariant OfflineSqlQueryModel::data(const QModelIndex &index, int role) const
 
 bool OfflineSqlQueryModel::select()
 {
-    if (!m_query.exec())
-        return false;
     beginResetModel();
     m_colCount = m_rowCount = 0;
     m_data.clear();
     m_headers.clear();
+    if (!m_query.exec()) {
+        endResetModel();
+        return false;
+    }
     int newRowCount = 0;
     while (m_query.next()) {
         if (m_colCount == 0) {

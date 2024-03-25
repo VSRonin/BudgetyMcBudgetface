@@ -53,12 +53,26 @@ Qt::ItemFlags OfflineSqlTable::flags(const QModelIndex &index) const
     return OfflineSqlQueryModel::flags(index) | Qt::ItemIsEditable;
 }
 
+QString OfflineSqlTable::tableName() const
+{
+    return m_tableName;
+}
+
+QString OfflineSqlTable::filter() const
+{
+    return m_filter;
+}
+
 QSqlQuery OfflineSqlTable::createQuery() const
 {
     QSqlDatabase db = openDb();
+    if (!db.isValid() || !db.isOpen())
+        return QSqlQuery();
+    QString queryString = QLatin1String("SELECT * FROM ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName);
+    if (!m_filter.isEmpty())
+        queryString += QLatin1String(" WHERE ") + m_filter;
     QSqlQuery selectQuery(db);
-    selectQuery.prepare(QLatin1String("SELECT * FROM ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName) + QLatin1String(" WHERE ")
-                        + m_filter);
+    selectQuery.prepare(queryString);
     return selectQuery;
 }
 

@@ -18,6 +18,8 @@
 namespace Ui {
 class MainWindow;
 }
+class MainObject;
+class SettingsDialog;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -26,8 +28,15 @@ public:
     ~MainWindow();
 private slots:
     void onAboutQt();
+    void onFileNew();
+    bool onFileSave();
+    bool onFileSaveAs();
+    bool onFileLoad();
 
 private:
+    QString m_lastSavedPath;
+    MainObject *m_object;
+    SettingsDialog *m_settingsDialog;
     Ui::MainWindow *ui;
 };
 
