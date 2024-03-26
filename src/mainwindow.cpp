@@ -1,5 +1,5 @@
 /****************************************************************************\
-   Copyright 2021 Luca Beldi
+   Copyright 2024 Luca Beldi
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -18,6 +18,8 @@
 #include <mainobject.h>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QCloseEvent>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_object(new MainObject(this))
@@ -29,12 +31,15 @@ MainWindow::MainWindow(QWidget *parent)
     m_settingsDialog->setMainObject(m_object);
     m_settingsDialog->setModal(true);
     m_settingsDialog->hide();
+    connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::onAboutQt);
     connect(ui->actionNew, &QAction::triggered, this, &MainWindow::onFileNew);
     connect(ui->actionSave, &QAction::triggered, this, &MainWindow::onFileSave);
     connect(ui->actionSave_As, &QAction::triggered, this, &MainWindow::onFileSaveAs);
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onFileLoad);
+    connect(ui->actionExit, &QAction::triggered, this, &MainWindow::onFileExit);
     connect(ui->actionOptions, &QAction::triggered, m_settingsDialog, &SettingsDialog::show);
     connect(m_object, &MainObject::dirtyChanged, this, &MainWindow::setWindowModified);
+    QMetaObject::invokeMethod(m_object, &MainObject::newBudget, Qt::QueuedConnection);
 }
 
 MainWindow::~MainWindow()
@@ -101,4 +106,29 @@ bool MainWindow::onFileLoad()
     }
     m_lastSavedPath = path;
     return true;
+}
+
+void MainWindow::onFileExit()
+{
+    Q_ASSERT(m_object);
+    if (m_object->isDirty()) {
+        if (QMessageBox::question(this, tr("Are you sure?"), tr("There are unsaved changes to your budget. Do you really want to quit?"),
+                                  QMessageBox::Yes | QMessageBox::No)
+            == QMessageBox::No)
+            return;
+    }
+    qApp->quit();
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (event->spontaneous() && m_object->isDirty()) {
+        if (QMessageBox::question(this, tr("Are you sure?"), tr("There are unsaved changes to your budget. Do you really want to quit?"),
+                                  QMessageBox::Yes | QMessageBox::No)
+            == QMessageBox::No) {
+            event->ignore();
+            return;
+        }
+    }
+    QMainWindow::closeEvent(event);
 }

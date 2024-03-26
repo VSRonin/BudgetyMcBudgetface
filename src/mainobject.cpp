@@ -16,7 +16,6 @@
 #include <QStandardItemModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
-#include <QSqlError>
 #include <QSaveFile>
 #include <QFile>
 
@@ -25,17 +24,15 @@ MainObject::MainObject(QObject *parent)
     , m_transactionsModel(new OfflineSqlTable(this))
     , m_accountsModel(new OfflineSqlTable(this))
     , m_categoriesModel(new OfflineSqlTable(this))
-    , m_currenciesModel(new QStandardItemModel(this))
-    , m_accountTypesModel(new QStandardItemModel(this))
+    , m_currenciesModel(new OfflineSqlTable(this))
+    , m_accountTypesModel(new OfflineSqlTable(this))
     , m_dirty(false)
 {
     m_transactionsModel->setTable(QStringLiteral("Transactions"));
     m_accountsModel->setTable(QStringLiteral("Accounts"));
     m_categoriesModel->setTable(QStringLiteral("Categories"));
-    Q_ASSUME(m_currenciesModel->insertColumn(0));
-    Q_ASSUME(m_accountTypesModel->insertColumn(0));
-    Q_ASSUME(m_currenciesModel->setHeaderData(0, Qt::Horizontal, tr("Currency")));
-    Q_ASSUME(m_currenciesModel->setHeaderData(0, Qt::Horizontal, tr("Account Type")));
+    m_currenciesModel->setTable(QStringLiteral("Currencies"));
+    m_accountTypesModel->setTable(QStringLiteral("AccountTypes"));
 }
 
 MainObject::~MainObject() { }
@@ -82,11 +79,66 @@ bool MainObject::addAccount(const QString &name, const QString &owner, int curr,
     addAccountQuery.addBindValue(owner);
     addAccountQuery.addBindValue(curr);
     addAccountQuery.addBindValue(typ);
-    if (!addAccountQuery.exec()) {
-        qDebug() << addAccountQuery.lastError().text();
+    if (!addAccountQuery.exec())
         return false;
-    }
     m_accountsModel->select();
+    setDirty(true);
+    return true;
+}
+
+bool MainObject::removeAccounts(const QList<int> &ids)
+{
+    if (ids.isEmpty())
+        return false;
+    QString filterString;
+    for (int id : ids)
+        filterString += QString::number(id) + QLatin1Char(',');
+    filterString.chop(1);
+    QSqlDatabase db = openDb();
+    if (!db.isOpen())
+        return false;
+    if (!db.transaction())
+        return false;
+    {
+        QSqlQuery removeTransactionsQuery(db);
+        removeTransactionsQuery.prepare(QStringLiteral("DELETE FROM Transactions WHERE Account IN (") + filterString + QLatin1Char(')'));
+        if (!removeTransactionsQuery.exec()) {
+            Q_ASSUME(db.rollback());
+            return false;
+        }
+    }
+    {
+        QSqlQuery removeAccountQuery(db);
+        removeAccountQuery.prepare(QStringLiteral("DELETE FROM Accounts WHERE Id IN (") + filterString + QLatin1Char(')'));
+        if (!removeAccountQuery.exec()) {
+            Q_ASSUME(db.rollback());
+            return false;
+        }
+    }
+    if (!db.commit())
+        return false;
+    m_accountsModel->select();
+    m_transactionsModel->select();
+    setDirty(true);
+    return true;
+}
+
+bool MainObject::removeTransactions(const QList<int> &ids)
+{
+    if (ids.isEmpty())
+        return false;
+    QString filterString;
+    for (int id : ids)
+        filterString += QString::number(id) + QLatin1Char(',');
+    filterString.chop(1);
+    QSqlDatabase db = openDb();
+    if (!db.isOpen())
+        return false;
+    QSqlQuery removeTransactionsQuery(db);
+    removeTransactionsQuery.prepare(QStringLiteral("DELETE FROM Transactions WHERE Id IN (") + filterString + QLatin1Char(')'));
+    if (!removeTransactionsQuery.exec())
+        return false;
+    m_transactionsModel->select();
     setDirty(true);
     return true;
 }
@@ -146,6 +198,26 @@ bool MainObject::loadBudget(const QString &path)
     return true;
 }
 
+bool MainObject::importStatement(const QString &path, ImportFormats format)
+{
+    // TODO
+    return false;
+}
+
+QDate MainObject::lastTransactionDate() const
+{
+    QSqlDatabase db = openDb();
+    if (!db.isOpen())
+        return QDate();
+    QSqlQuery lastTransactionQuery(db);
+    lastTransactionQuery.prepare(QStringLiteral("SELECT TOP 1 OperationDate FROM Transactions ORDER BY OperationDate DESC"));
+    if (!lastTransactionQuery.exec())
+        return QDate();
+    if (!lastTransactionQuery.next())
+        return QDate();
+    return QDate::fromString(lastTransactionQuery.value(0).toString(), Qt::ISODate);
+}
+
 void MainObject::setDirty(bool dirty)
 {
     if (dirty == m_dirty)
@@ -156,38 +228,6 @@ void MainObject::setDirty(bool dirty)
 
 void MainObject::reselectModels()
 {
-    for (OfflineSqlTable *model : {m_transactionsModel, m_accountsModel, m_categoriesModel})
+    for (OfflineSqlTable *model : {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_accountTypesModel})
         model->setTable(model->tableName());
-
-    m_currenciesModel->removeRows(0, m_currenciesModel->rowCount());
-    m_accountTypesModel->removeRows(0, m_currenciesModel->rowCount());
-    QSqlDatabase db = openDb();
-    if (db.isOpen()) {
-        {
-            QSqlQuery currencyQuery(db);
-            currencyQuery.prepare(QStringLiteral("SELECT Id, Currency FROM Currencies"));
-            if (currencyQuery.exec()) {
-                while (currencyQuery.next()) {
-                    const int newRow = m_currenciesModel->rowCount();
-                    Q_ASSUME(m_currenciesModel->insertRow(newRow));
-                    const QModelIndex currIdx = m_currenciesModel->index(newRow, 0);
-                    Q_ASSUME(m_currenciesModel->setData(currIdx, currencyQuery.value(1)));
-                    Q_ASSUME(m_currenciesModel->setData(currIdx, currencyQuery.value(0), Qt::UserRole));
-                }
-            }
-        }
-        {
-            QSqlQuery accountTypeQuery(db);
-            accountTypeQuery.prepare(QStringLiteral("SELECT Id, Name FROM AccountTypes"));
-            if (accountTypeQuery.exec()) {
-                while (accountTypeQuery.next()) {
-                    const int newRow = m_accountTypesModel->rowCount();
-                    Q_ASSUME(m_accountTypesModel->insertRow(newRow));
-                    const QModelIndex currIdx = m_accountTypesModel->index(newRow, 0);
-                    Q_ASSUME(m_accountTypesModel->setData(currIdx, accountTypeQuery.value(1)));
-                    Q_ASSUME(m_accountTypesModel->setData(currIdx, accountTypeQuery.value(0), Qt::UserRole));
-                }
-            }
-        }
-    }
 }

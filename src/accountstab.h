@@ -10,17 +10,32 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
+#ifndef ACCOUNTSTAB_H
+#define ACCOUNTSTAB_H
 
-#ifndef DECIMALDELEGATE_H
-#define DECIMALDELEGATE_H
-#include <QStyledItemDelegate>
-class DecimalDelegate : public QStyledItemDelegate
+#include <QWidget>
+
+namespace Ui {
+class AccountsTab;
+}
+class RelationalDelegate;
+class MainObject;
+class AccountsTab : public QWidget
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(DecimalDelegate)
+
 public:
-    explicit DecimalDelegate(QObject *parent = nullptr);
-    QString displayText(const QVariant &value, const QLocale &locale) const override;
+    explicit AccountsTab(QWidget *parent = nullptr);
+    ~AccountsTab();
+    void setMainObject(MainObject *mainObj);
+
+private:
+    void onAddAccount();
+    void onRemoveAccount();
+    MainObject *m_object;
+    Ui::AccountsTab *ui;
+    RelationalDelegate *m_currencyDelegate;
+    RelationalDelegate *m_accountTypeDelagate;
 };
 
-#endif
+#endif // ACCOUNTSTAB_H

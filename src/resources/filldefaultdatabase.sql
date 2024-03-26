@@ -25,13 +25,13 @@ CREATE TABLE Transactions (
     Date TEXT NOT NULL,
     Currency INTEGER NOT NULL,
     Amount REAL NOT NULL,
-    Fee REA,
     PaymentType TEXT,
     Description TEXT,
     Category INT,
     Subcategory INT,
     MovementType INT,
     DestinationAccount INT,
+    ExchangeRate REAL,
     FOREIGN KEY (Currency) REFERENCES Currencies (Id),
     FOREIGN KEY (Account) REFERENCES Accounts (Id),
     FOREIGN KEY (Category) REFERENCES Categories (Id),
@@ -39,7 +39,7 @@ CREATE TABLE Transactions (
     FOREIGN KEY (MovementType) REFERENCES MovementTypes (Id),
     FOREIGN KEY (DestinationAccount) REFERENCES Accounts (Id)
 );
-INSERT INTO Currencies (Id, Currency) VALUES (1,'GBP'),(2,'EUR'),(3,'USD');
+INSERT INTO Currencies (Id, Currency) VALUES (1,'GBP'),(2,'EUR'),(3,'USD'),(4,'CHF');
 INSERT INTO AccountTypes (Id, Name) VALUES (1,'Current Account'),(2,'Saving'),(3,'Debt');
 INSERT INTO MovementTypes (Id, Name) VALUES (1,'Income'),(2,'Expense'),(3,'Refund'),(4,'Deposit'),(5,'Repayment'),(6,'Withdrawal');
 INSERT INTO Categories (Id, Name) VALUES

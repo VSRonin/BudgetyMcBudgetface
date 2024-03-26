@@ -1,15 +1,25 @@
+/****************************************************************************\
+   Copyright 2024 Luca Beldi
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+\****************************************************************************/
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
 #include <mainobject.h>
-#include "addaccountdialog.h"
-#include <QMessageBox>
+
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
     , m_object(nullptr)
     , ui(new Ui::SettingsDialog)
 {
     ui->setupUi(this);
-    connect(ui->addAccountButton, &QPushButton::clicked, this, &SettingsDialog::onAddAccount);
 }
 
 SettingsDialog::~SettingsDialog()
@@ -20,18 +30,6 @@ SettingsDialog::~SettingsDialog()
 void SettingsDialog::setMainObject(MainObject *mainObj)
 {
     m_object = mainObj;
-    ui->accountsView->setModel(m_object->accountsModel());
-    ui->categoriesView->setModel(m_object->categoriesModel());
-}
 
-void SettingsDialog::onAddAccount()
-{
-    Q_ASSERT(m_object);
-    AddAccountDialog addAccountDialog(this);
-    addAccountDialog.loadCombos(m_object->currenciesModel(), m_object->accountTypesModel());
-    while (addAccountDialog.exec()) {
-        if (m_object->addAccount(addAccountDialog.name(), addAccountDialog.owner(), addAccountDialog.curr(), addAccountDialog.typ()))
-            break;
-        QMessageBox::critical(this, tr("Error"), tr("Failed to add a new account, try again or check your input"));
-    }
+    ui->categoriesView->setModel(m_object->categoriesModel());
 }

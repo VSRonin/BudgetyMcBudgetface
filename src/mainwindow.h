@@ -32,6 +32,10 @@ private slots:
     bool onFileSave();
     bool onFileSaveAs();
     bool onFileLoad();
+    void onFileExit();
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private:
     QString m_lastSavedPath;

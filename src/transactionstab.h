@@ -10,17 +10,30 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
+#ifndef TRANSACTIONSTAB_H
+#define TRANSACTIONSTAB_H
 
-#ifndef DECIMALDELEGATE_H
-#define DECIMALDELEGATE_H
-#include <QStyledItemDelegate>
-class DecimalDelegate : public QStyledItemDelegate
+#include <QWidget>
+#include <mainobject.h>
+namespace Ui {
+class TransactionsTab;
+}
+
+class TransactionsTab : public QWidget
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(DecimalDelegate)
+
 public:
-    explicit DecimalDelegate(QObject *parent = nullptr);
-    QString displayText(const QVariant &value, const QLocale &locale) const override;
+    explicit TransactionsTab(QWidget *parent = nullptr);
+    ~TransactionsTab();
+    void setMainObject(MainObject *mainObj);
+
+private:
+    void importStatement(MainObject::ImportFormats format);
+    void onRemoveTransactions();
+    void refreshLastUpdate();
+    MainObject *m_object;
+    Ui::TransactionsTab *ui;
 };
 
-#endif
+#endif // TRANSACTIONSTAB_H

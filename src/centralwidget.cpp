@@ -13,8 +13,8 @@
 
 #include "centralwidget.h"
 #include "ui_centralwidget.h"
-#include <globals.h>
 #include <mainobject.h>
+
 CentralWidget::CentralWidget(QWidget *parent)
     : QWidget(parent)
     , m_object(nullptr)
@@ -32,5 +32,6 @@ CentralWidget::~CentralWidget()
 void CentralWidget::setMainObject(MainObject *mainObj)
 {
     m_object = mainObj;
-    ui->transactionsView->setModel(m_object ? m_object->transactionsModel() : nullptr);
+    ui->accountsWidget->setMainObject(mainObj);
+    ui->transactionsWidget->setMainObject(mainObj);
 }
