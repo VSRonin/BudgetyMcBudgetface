@@ -41,6 +41,9 @@
        <property name="text">
         <string>Import Statement</string>
        </property>
+       <property name="popupMode">
+        <enum>QToolButton::InstantPopup</enum>
+       </property>
       </widget>
      </item>
     </layout>

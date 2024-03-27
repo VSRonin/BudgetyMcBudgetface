@@ -15,14 +15,20 @@
 #include <globals.h>
 #include <QSqlQuery>
 #include <QSqlDatabase>
-
+#include <QPushButton>
+#include <QRegularExpression>
+#include <mainobject.h>
 AddAccountDialog::AddAccountDialog(QWidget *parent)
     : QDialog(parent)
-    , m_currKeyCol(0)
-    , m_accTypKeyCol(0)
+    , m_object(nullptr)
     , ui(new Ui::AddAccountDialog)
 {
     ui->setupUi(this);
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
+    connect(ui->nameEdit, &QLineEdit::textChanged, this, &AddAccountDialog::checkOkEnabled);
+    connect(ui->ownerCombo, &MultichoiceCombo::chosenTextChanged, this, &AddAccountDialog::checkOkEnabled);
+    connect(ui->currencyCombo, &QComboBox::currentIndexChanged, this, &AddAccountDialog::checkOkEnabled);
+    connect(ui->accountTypeCombo, &QComboBox::currentIndexChanged, this, &AddAccountDialog::checkOkEnabled);
 }
 
 AddAccountDialog::~AddAccountDialog()
@@ -37,26 +43,42 @@ QString AddAccountDialog::name() const
 
 QString AddAccountDialog::owner() const
 {
-    return ui->ownerEdit->text();
+    if (!m_object)
+        return QString();
+    const QList<int> ownersIdx = ui->ownerCombo->checkedIndexes();
+    QString result;
+    for (int i : ownersIdx)
+        result += QString::number(m_object->familyModel()->index(i, MainObject::fcId).data().toInt()) + QLatin1Char(',');
+    result.chop(1);
+    return result;
 }
 
 int AddAccountDialog::typ() const
 {
-    return ui->accountTypeCombo->model()->index(ui->accountTypeCombo->currentIndex(), m_currKeyCol).data().toInt();
+    return ui->accountTypeCombo->model()->index(ui->accountTypeCombo->currentIndex(), MainObject::ccId).data().toInt();
 }
 
 int AddAccountDialog::curr() const
 {
-    return ui->currencyCombo->model()->index(ui->currencyCombo->currentIndex(), m_accTypKeyCol).data().toInt();
+    return ui->currencyCombo->model()->index(ui->currencyCombo->currentIndex(), MainObject::atcId).data().toInt();
 }
 
-void AddAccountDialog::loadCombos(QAbstractItemModel *currenciesModel, QAbstractItemModel *accountTypesModel, int currModelKeyCol,
-                                  int currModelValCol, int AccTypModelKeyCol, int AccTypModelValCol)
+void AddAccountDialog::setMainObject(MainObject *mainObj)
 {
-    ui->currencyCombo->setModel(currenciesModel);
-    m_currKeyCol = currModelKeyCol;
-    ui->currencyCombo->setModelColumn(currModelValCol);
-    ui->accountTypeCombo->setModel(accountTypesModel);
-    m_accTypKeyCol = AccTypModelKeyCol;
-    ui->accountTypeCombo->setModelColumn(AccTypModelValCol);
+    m_object = mainObj;
+    if (m_object) {
+        ui->currencyCombo->setModel(m_object->currenciesModel());
+        ui->accountTypeCombo->setModel(m_object->accountTypesModel());
+        ui->ownerCombo->setModel(m_object->familyModel());
+    }
+    ui->currencyCombo->setModelColumn(MainObject::ccCurrency);
+    ui->accountTypeCombo->setModelColumn(MainObject::atcName);
+    ui->ownerCombo->setModelColumn(MainObject::fcName);
+}
+
+void AddAccountDialog::checkOkEnabled()
+{
+    const bool result = !ui->ownerCombo->chosenText().isEmpty() && !ui->nameEdit->text().isEmpty() && !ui->currencyCombo->currentText().isEmpty()
+            && !ui->accountTypeCombo->currentText().isEmpty();
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(result);
 }

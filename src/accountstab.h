@@ -20,6 +20,7 @@ class AccountsTab;
 }
 class RelationalDelegate;
 class MainObject;
+class OwnerDelegate;
 class AccountsTab : public QWidget
 {
     Q_OBJECT
@@ -36,6 +37,7 @@ private:
     Ui::AccountsTab *ui;
     RelationalDelegate *m_currencyDelegate;
     RelationalDelegate *m_accountTypeDelagate;
+    OwnerDelegate *m_ownerDelegate;
 };
 
 #endif // ACCOUNTSTAB_H

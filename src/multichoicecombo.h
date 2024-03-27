@@ -10,32 +10,33 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#ifndef ADDACCOUNTDIALOG_H
-#define ADDACCOUNTDIALOG_H
+#ifndef MULTICHOICECOMBO_H
+#define MULTICHOICECOMBO_H
 
-#include <QDialog>
-class QAbstractItemModel;
-namespace Ui {
-class AddAccountDialog;
-}
-class MainObject;
-class AddAccountDialog : public QDialog
+#include <QComboBox>
+class RoleMaskProxyModel;
+class QStandardItemModel;
+class MultichoiceCombo : public QComboBox
 {
     Q_OBJECT
-
+    Q_DISABLE_COPY_MOVE(MultichoiceCombo)
 public:
-    explicit AddAccountDialog(QWidget *parent = nullptr);
-    ~AddAccountDialog();
-    QString name() const;
-    QString owner() const;
-    int curr() const;
-    int typ() const;
-    void setMainObject(MainObject *mainObj);
+    MultichoiceCombo(QWidget *parent = nullptr);
+    void setModel(QAbstractItemModel *model) override;
+    const QString &chosenText() const;
+    QList<int> checkedIndexes() const;
+    void setCheckedIndexes(const QList<int> &idx);
+
+protected:
+    void initStyleOption(QStyleOptionComboBox *option) const override;
+signals:
+    void chosenTextChanged(const QString &newText);
 
 private:
-    void checkOkEnabled();
-    MainObject *m_object;
-    Ui::AddAccountDialog *ui;
+    QStandardItemModel *m_baseModel;
+    RoleMaskProxyModel *m_choiceMask;
+    QString m_chosenText;
+    void updateChosenText();
 };
 
-#endif // ADDACCOUNTDIALOG_H
+#endif // MULTICHOICECOMBO_H

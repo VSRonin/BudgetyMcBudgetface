@@ -10,32 +10,32 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#ifndef ADDACCOUNTDIALOG_H
-#define ADDACCOUNTDIALOG_H
+#ifndef ADDFAMILYMEMBERDIALOG_H
+#define ADDFAMILYMEMBERDIALOG_H
 
 #include <QDialog>
-class QAbstractItemModel;
+
 namespace Ui {
-class AddAccountDialog;
+class AddFamilyMemberDialog;
 }
 class MainObject;
-class AddAccountDialog : public QDialog
+class AddFamilyMemberDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit AddAccountDialog(QWidget *parent = nullptr);
-    ~AddAccountDialog();
-    QString name() const;
-    QString owner() const;
-    int curr() const;
-    int typ() const;
+    explicit AddFamilyMemberDialog(QWidget *parent = nullptr);
+    ~AddFamilyMemberDialog();
     void setMainObject(MainObject *mainObj);
+    QString name() const;
+    QDate birthday() const;
+    double annualIncome() const;
+    int incomeCurrency() const;
 
 private:
     void checkOkEnabled();
     MainObject *m_object;
-    Ui::AddAccountDialog *ui;
+    Ui::AddFamilyMemberDialog *ui;
 };
 
-#endif // ADDACCOUNTDIALOG_H
+#endif // ADDFAMILYMEMBERDIALOG_H

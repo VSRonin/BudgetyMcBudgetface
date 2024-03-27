@@ -11,19 +11,37 @@ set(ui_SRCS
     accountstab.h
     accountstab.cpp
     accountstab.ui
-    decimaldelegate.h
-    decimaldelegate.cpp
+    transactionstab.h
+    transactionstab.cpp
+    transactionstab.ui
+    familytab.h
+    familytab.cpp
+    familytab.ui
+)
+set(dialogs_SRCS
     settingsdialog.h
     settingsdialog.cpp
     settingsdialog.ui
     addaccountdialog.h
     addaccountdialog.cpp
     addaccountdialog.ui
+    addfamilymemberdialog.h
+    addfamilymemberdialog.cpp
+    addfamilymemberdialog.ui
+)
+set(widgets_SRCS
+    multichoicecombo.h
+    multichoicecombo.cpp
+)
+set(delegates_SRCS
+    decimaldelegate.h
+    decimaldelegate.cpp
     relationaldelegate.h
     relationaldelegate.cpp
-    transactionstab.h
-    transactionstab.cpp
-    transactionstab.ui
+    isodatedelegate.h
+    isodatedelegate.cpp
+    ownerdelegate.h
+    ownerdelegate.cpp
 )
 set(backend_SRCS
     backendresources.qrc
@@ -38,12 +56,18 @@ set(backend_SRCS
 )
 
 source_group(UI FILES ${ui_SRCS})
+source_group(Widgets FILES ${widgets_SRCS})
+source_group(Delegates FILES ${delegates_SRCS})
+source_group(Dialogs FILES ${dialogs_SRCS})
 source_group(Backend FILES ${backend_SRCS})
 set(TestBudget_SRCS
     ${backend_SRCS}
 )
 set(TestBudgetUi_SRCS
     ${ui_SRCS}
+    ${delegates_SRCS}
+    ${dialogs_SRCS}
+    ${widgets_SRCS}
 )
 if (FALSE)
     qt6_add_library(TestBudgetLib STATIC ${TestBudget_SRCS})

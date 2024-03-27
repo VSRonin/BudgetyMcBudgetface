@@ -17,5 +17,7 @@ DecimalDelegate::DecimalDelegate(QObject *parent)
 
 QString DecimalDelegate::displayText(const QVariant &value, const QLocale &locale) const
 {
-    return locale.toString(value.toDouble(), 'f', 2);
+    QLocale localeCopy = locale;
+    localeCopy.setNumberOptions(localeCopy.numberOptions() & (~QLocale::OmitGroupSeparator));
+    return localeCopy.toString(value.toDouble(), 'f', 2);
 }

@@ -17,13 +17,14 @@
 #include <QMessageBox>
 #include <QHeaderView>
 #include <mainobject.h>
+#include "ownerdelegate.h"
 AccountsTab::AccountsTab(QWidget *parent)
     : QWidget(parent)
     , m_object(nullptr)
     , ui(new Ui::AccountsTab)
     , m_currencyDelegate(new RelationalDelegate(this))
     , m_accountTypeDelagate(new RelationalDelegate(this))
-
+    , m_ownerDelegate(new OwnerDelegate(this))
 {
     ui->setupUi(this);
     ui->accountsView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -39,29 +40,31 @@ AccountsTab::~AccountsTab()
 void AccountsTab::setMainObject(MainObject *mainObj)
 {
     m_object = mainObj;
-    ui->accountsView->setModel(m_object ? m_object->accountsModel() : nullptr);
-    m_currencyDelegate->setRelationModel(m_object ? m_object->currenciesModel() : nullptr, MainObject::ccId, MainObject::ccCurrency);
-    m_accountTypeDelagate->setRelationModel(m_object ? m_object->accountTypesModel() : nullptr, MainObject::atcId, MainObject::atcName);
-    connect(ui->accountsView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
-            [this]() { ui->removeAccountButton->setEnabled(!ui->accountsView->selectionModel()->selectedIndexes().isEmpty()); });
     if (m_object) {
+        ui->accountsView->setModel(m_object->accountsModel());
         const auto setupView = [this]() {
             ui->accountsView->setColumnHidden(MainObject::acId, true);
             ui->accountsView->setItemDelegateForColumn(MainObject::acCurrency, m_currencyDelegate);
             ui->accountsView->setItemDelegateForColumn(MainObject::acAccountType, m_accountTypeDelagate);
+            ui->accountsView->setItemDelegateForColumn(MainObject::acOwner, m_ownerDelegate);
         };
         connect(m_object->accountsModel(), &QAbstractItemModel::rowsInserted, this, setupView);
         connect(m_object->accountsModel(), &QAbstractItemModel::modelReset, this, setupView);
         setupView();
-    }
+    } else
+        ui->removeAccountButton->setEnabled(false);
+    m_ownerDelegate->setMainObject(m_object);
+    m_currencyDelegate->setRelationModel(m_object ? m_object->currenciesModel() : nullptr, MainObject::ccId, MainObject::ccCurrency);
+    m_accountTypeDelagate->setRelationModel(m_object ? m_object->accountTypesModel() : nullptr, MainObject::atcId, MainObject::atcName);
+    connect(ui->accountsView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+            [this]() { ui->removeAccountButton->setEnabled(!ui->accountsView->selectionModel()->selectedIndexes().isEmpty()); });
 }
 
 void AccountsTab::onAddAccount()
 {
     Q_ASSERT(m_object);
     AddAccountDialog addAccountDialog(this);
-    addAccountDialog.loadCombos(m_object->currenciesModel(), m_object->accountTypesModel(), MainObject::ccId, MainObject::ccCurrency,
-                                MainObject::atcId, MainObject::atcName);
+    addAccountDialog.setMainObject(m_object);
     while (addAccountDialog.exec()) {
         if (m_object->addAccount(addAccountDialog.name(), addAccountDialog.owner(), addAccountDialog.curr(), addAccountDialog.typ()))
             break;

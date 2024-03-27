@@ -10,32 +10,20 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#ifndef ADDACCOUNTDIALOG_H
-#define ADDACCOUNTDIALOG_H
+#ifndef ISODATEDELEGATE_H
+#define ISODATEDELEGATE_H
 
-#include <QDialog>
-class QAbstractItemModel;
-namespace Ui {
-class AddAccountDialog;
-}
-class MainObject;
-class AddAccountDialog : public QDialog
+#include <QStyledItemDelegate>
+
+class IsoDateDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
-
 public:
-    explicit AddAccountDialog(QWidget *parent = nullptr);
-    ~AddAccountDialog();
-    QString name() const;
-    QString owner() const;
-    int curr() const;
-    int typ() const;
-    void setMainObject(MainObject *mainObj);
-
-private:
-    void checkOkEnabled();
-    MainObject *m_object;
-    Ui::AddAccountDialog *ui;
+    explicit IsoDateDelegate(QObject *parent = nullptr);
+    QString displayText(const QVariant &value, const QLocale &locale) const override;
+    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
 };
 
-#endif // ADDACCOUNTDIALOG_H
+#endif // ISODATEDELEGATE_H

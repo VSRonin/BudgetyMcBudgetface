@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>AddAccountDialog</class>
- <widget class="QDialog" name="AddAccountDialog">
+ <class>AddFamilyMemberDialog</class>
+ <widget class="QDialog" name="AddFamilyMemberDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>182</height>
+    <height>162</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Add Account</string>
+   <string>Dialog</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label_5">
+    <widget class="QLabel" name="label_4">
      <property name="text">
       <string>All fields are mandatory</string>
      </property>
@@ -26,7 +26,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Account Name</string>
+        <string>Name</string>
        </property>
       </widget>
      </item>
@@ -36,32 +36,60 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>Owner</string>
+        <string>Date of Birth</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="MultichoiceCombo" name="ownerCombo"/>
+      <widget class="QDateEdit" name="birthdayEdit">
+       <property name="toolTip">
+        <string>Used to determine time to retirement</string>
+       </property>
+       <property name="calendarPopup">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label_3">
        <property name="text">
-        <string>Currency</string>
+        <string>Taxable Income</string>
        </property>
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QComboBox" name="currencyCombo"/>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>Type</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QComboBox" name="accountTypeCombo"/>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QComboBox" name="incomeCurrencyCombo">
+         <property name="toolTip">
+          <string>Used to calculate taxes on investments</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="incomeSpin">
+         <property name="toolTip">
+          <string>Used to calculate taxes on investments</string>
+         </property>
+         <property name="showGroupSeparator" stdset="0">
+          <bool>true</bool>
+         </property>
+         <property name="maximum">
+          <double>1000000000.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>1000.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="incomeScaleCombo">
+         <property name="toolTip">
+          <string>Used to calculate taxes on investments</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
@@ -73,16 +101,13 @@
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>7</height>
+       <height>11</height>
       </size>
      </property>
     </spacer>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
@@ -93,19 +118,12 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>MultichoiceCombo</class>
-   <extends>QComboBox</extends>
-   <header>multichoicecombo.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>AddAccountDialog</receiver>
+   <receiver>AddFamilyMemberDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -121,7 +139,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>AddAccountDialog</receiver>
+   <receiver>AddFamilyMemberDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

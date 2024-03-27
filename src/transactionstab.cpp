@@ -29,7 +29,6 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     importStatementsMenu->addAction(ui->actionImport_Natwest);
     importStatementsMenu->addAction(ui->actionImport_Revolut);
     ui->importStatementButton->setMenu(importStatementsMenu);
-    ui->importStatementButton->setPopupMode(QToolButton::InstantPopup);
     connect(ui->actionImport_Barclays, &QAction::triggered, this, std::bind(&TransactionsTab::importStatement, this, MainObject::ifBarclays));
     connect(ui->actionImport_Natwest, &QAction::triggered, this, std::bind(&TransactionsTab::importStatement, this, MainObject::ifNatwest));
     connect(ui->actionImport_Revolut, &QAction::triggered, this, std::bind(&TransactionsTab::importStatement, this, MainObject::ifRevolut));

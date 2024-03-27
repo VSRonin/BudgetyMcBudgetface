@@ -1,6 +1,20 @@
 BEGIN TRANSACTION;
 CREATE TABLE Currencies (Id INTEGER PRIMARY KEY, Currency TEXT NOT NULL);
+CREATE TABLE ExchangeRates (
+    FromCurrency TEXT NOT NULL,
+    ToCurrency TEXT NOT NULL,
+    ExchangeRate REAL NOT NULL,
+    PRIMARY KEY (FromCurrency, ToCurrency)
+);
 CREATE TABLE AccountTypes (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL);
+CREATE TABLE Family (
+    Id INTEGER PRIMARY KEY,
+    Name TEXT NOT NULL,
+    Birthday TEXT NOT NULL,
+    TaxableIncome REAL NOT NULL,
+    IncomeCurrency INTEGER NOT NULL,
+    FOREIGN KEY (IncomeCurrency) REFERENCES Currencies (Id)
+);
 CREATE TABLE Accounts (
     Id INTEGER PRIMARY KEY,
     Name TEXT NOT NULL,
@@ -22,7 +36,7 @@ CREATE TABLE Subcategories (
 CREATE TABLE Transactions (
     Id INTEGER PRIMARY KEY,
     Account INTEGER NOT NULL,
-    Date TEXT NOT NULL,
+    OperationDate TEXT NOT NULL,
     Currency INTEGER NOT NULL,
     Amount REAL NOT NULL,
     PaymentType TEXT,
@@ -40,6 +54,20 @@ CREATE TABLE Transactions (
     FOREIGN KEY (DestinationAccount) REFERENCES Accounts (Id)
 );
 INSERT INTO Currencies (Id, Currency) VALUES (1,'GBP'),(2,'EUR'),(3,'USD'),(4,'CHF');
+INSERT INTO ExchangeRates (FromCurrency, ToCurrency, ExchangeRate) VALUES
+    ('GBP','EUR',1.0),
+    ('GBP','USD',1.0),
+    ('GBP','CHF',1.0),
+    ('EUR','GBP',1.0),
+    ('EUR','USD',1.0),
+    ('EUR','CHF',1.0),
+    ('USD','EUR',1.0),
+    ('USD','GBP',1.0),
+    ('USD','CHF',1.0),
+    ('CHF','EUR',1.0),
+    ('CHF','USD',1.0),
+    ('CHF','GBP',1.0)
+;
 INSERT INTO AccountTypes (Id, Name) VALUES (1,'Current Account'),(2,'Saving'),(3,'Debt');
 INSERT INTO MovementTypes (Id, Name) VALUES (1,'Income'),(2,'Expense'),(3,'Refund'),(4,'Deposit'),(5,'Repayment'),(6,'Withdrawal');
 INSERT INTO Categories (Id, Name) VALUES
@@ -62,7 +90,7 @@ INSERT INTO Categories (Id, Name) VALUES
     (16,'Holidays'),
     (17,'Subscriptions'),
     (18,'Investment'),
-    (19,'Debt')
+    (19,'Debt'),
     (20,'Car')
 ;
 INSERT INTO Subcategories (Id, Category, Name, NeedWantSave) VALUES
@@ -124,10 +152,10 @@ INSERT INTO Subcategories (Id, Category, Name, NeedWantSave) VALUES
     (55,9,'Taxi',2),
     (56,9,'Train',2),
     (57,18,'Investment',0),
-    (58,19,'Debt',0)
-    (59,20,'Fuel',0)
-    (60,20,'Insurance',0)
-    (61,20,'Repair',0)
+    (58,19,'Debt',0),
+    (59,20,'Fuel',0),
+    (60,20,'Insurance',0),
+    (61,20,'Repair',0),
     (62,20,'Tax',0)
 ;
 COMMIT;

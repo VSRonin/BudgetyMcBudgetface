@@ -17,8 +17,18 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
+     <widget class="QWidget" name="familyTab">
+      <attribute name="title">
+       <string>Family</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="FamilyTab" name="familyWidget" native="true"/>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="accountsTab">
       <attribute name="title">
        <string>Accounts</string>
@@ -64,6 +74,12 @@
    <class>TransactionsTab</class>
    <extends>QWidget</extends>
    <header>transactionstab.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FamilyTab</class>
+   <extends>QWidget</extends>
+   <header>familytab.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

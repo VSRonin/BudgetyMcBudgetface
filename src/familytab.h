@@ -10,32 +10,35 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#ifndef ADDACCOUNTDIALOG_H
-#define ADDACCOUNTDIALOG_H
+#ifndef FAMILYTAB_H
+#define FAMILYTAB_H
 
-#include <QDialog>
-class QAbstractItemModel;
+#include <QWidget>
+
 namespace Ui {
-class AddAccountDialog;
+class FamilyTab;
 }
 class MainObject;
-class AddAccountDialog : public QDialog
+class RelationalDelegate;
+class DecimalDelegate;
+class IsoDateDelegate;
+class FamilyTab : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit AddAccountDialog(QWidget *parent = nullptr);
-    ~AddAccountDialog();
-    QString name() const;
-    QString owner() const;
-    int curr() const;
-    int typ() const;
+    explicit FamilyTab(QWidget *parent = nullptr);
+    ~FamilyTab();
     void setMainObject(MainObject *mainObj);
 
 private:
-    void checkOkEnabled();
+    void onAddFamily();
+    void onRemoveFamily();
     MainObject *m_object;
-    Ui::AddAccountDialog *ui;
+    Ui::FamilyTab *ui;
+    RelationalDelegate *m_currencyDelegate;
+    DecimalDelegate *m_incomeDelegate;
+    IsoDateDelegate *m_birthdayDelegate;
 };
 
-#endif // ADDACCOUNTDIALOG_H
+#endif // FAMILYTAB_H

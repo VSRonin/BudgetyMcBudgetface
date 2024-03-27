@@ -10,32 +10,25 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#ifndef ADDACCOUNTDIALOG_H
-#define ADDACCOUNTDIALOG_H
+#ifndef OWNERDELEGATE_H
+#define OWNERDELEGATE_H
 
-#include <QDialog>
-class QAbstractItemModel;
-namespace Ui {
-class AddAccountDialog;
-}
+#include <QStyledItemDelegate>
 class MainObject;
-class AddAccountDialog : public QDialog
+class OwnerDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
-
+    Q_DISABLE_COPY_MOVE(OwnerDelegate)
 public:
-    explicit AddAccountDialog(QWidget *parent = nullptr);
-    ~AddAccountDialog();
-    QString name() const;
-    QString owner() const;
-    int curr() const;
-    int typ() const;
+    explicit OwnerDelegate(QObject *parent = nullptr);
     void setMainObject(MainObject *mainObj);
+    QString displayText(const QVariant &value, const QLocale &locale) const override;
+    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
 
 private:
-    void checkOkEnabled();
     MainObject *m_object;
-    Ui::AddAccountDialog *ui;
 };
 
-#endif // ADDACCOUNTDIALOG_H
+#endif // OWNERDELEGATE_H

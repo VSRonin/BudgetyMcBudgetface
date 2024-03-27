@@ -34,4 +34,5 @@ void CentralWidget::setMainObject(MainObject *mainObj)
     m_object = mainObj;
     ui->accountsWidget->setMainObject(mainObj);
     ui->transactionsWidget->setMainObject(mainObj);
+    ui->familyWidget->setMainObject(mainObj);
 }
