@@ -53,6 +53,10 @@ set(backend_SRCS
     offlinesqltable.cpp
     offlinesqlquerymodel.h
     offlinesqlquerymodel.cpp
+    multiplefilterproxy.h
+    multiplefilterproxy.cpp
+    blankrowproxy.h
+    blankrowproxy.cpp
 )
 
 source_group(UI FILES ${ui_SRCS})

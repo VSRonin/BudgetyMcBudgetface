@@ -17,6 +17,7 @@
 #include <QDate>
 class OfflineSqlTable;
 class QAbstractItemModel;
+class QFile;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -62,6 +63,7 @@ public:
     bool saveBudget(const QString &path);
     bool loadBudget(const QString &path);
     bool importStatement(const QString &path, ImportFormats format);
+    bool importBarclaysStatement(QFile *source);
     QDate lastTransactionDate() const;
     const QString &baseCurrency() const;
     bool setBaseCurrency(const QString &crncy);

@@ -21,6 +21,8 @@ class AccountsTab;
 class RelationalDelegate;
 class MainObject;
 class OwnerDelegate;
+class AndFilterProxy;
+class BlankRowProxy;
 class AccountsTab : public QWidget
 {
     Q_OBJECT
@@ -33,11 +35,15 @@ public:
 private:
     void onAddAccount();
     void onRemoveAccount();
+    void onNameFilterChanged(const QString &text);
+    void onCurrencyFilterChanged(int newIndex);
     MainObject *m_object;
     Ui::AccountsTab *ui;
     RelationalDelegate *m_currencyDelegate;
     RelationalDelegate *m_accountTypeDelagate;
     OwnerDelegate *m_ownerDelegate;
+    AndFilterProxy *m_filterProxy;
+    BlankRowProxy *m_currencyProxy;
 };
 
 #endif // ACCOUNTSTAB_H

@@ -347,8 +347,24 @@ bool MainObject::loadBudget(const QString &path)
 
 bool MainObject::importStatement(const QString &path, ImportFormats format)
 {
-    // TODO
-    return false;
+    QFile source(path);
+    if (!source.open(QFile::ReadOnly | QFile::Text))
+        return false;
+    switch (format) {
+    case MainObject::ifBarclays:
+        return importBarclaysStatement(&source);
+    case MainObject::ifNatwest:
+        break;
+    case MainObject::ifRevolut:
+        break;
+    }
+}
+
+bool MainObject::importBarclaysStatement(QFile *source)
+{
+    QFile source(path);
+    if (!source.open(QFile::ReadOnly | QFile::Text))
+        return false;
 }
 
 QDate MainObject::lastTransactionDate() const
