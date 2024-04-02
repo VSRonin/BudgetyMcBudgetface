@@ -13,7 +13,7 @@
 #ifndef BLANKROWPROXY_H
 #define BLANKROWPROXY_H
 
-#include <QAbstractProxyModel >
+#include <QAbstractProxyModel>
 
 class BlankRowProxy : public QAbstractProxyModel
 {
@@ -24,6 +24,8 @@ public:
     QModelIndex buddy(const QModelIndex &index) const override;
     bool canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const override;
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override;
+    bool canFetchMore(const QModelIndex &parent) const override;
+    void fetchMore(const QModelIndex &parent) override;
     bool clearItemData(const QModelIndex &index) override;
     QVariant data(const QModelIndex &proxyIndex, int role = Qt::DisplayRole) const override;
     void multiData(const QModelIndex &index, QModelRoleDataSpan roleDataSpan) const override;
@@ -48,6 +50,23 @@ public:
     bool moveColumns(const QModelIndex &sourceParent, int sourceColumn, int count, const QModelIndex &destinationParent,
                      int destinationChild) override;
     bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
+    QModelIndexList match(const QModelIndex &start, int role, const QVariant &value, int hits = 1,
+                          Qt::MatchFlags flags = Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
+    QMimeData *mimeData(const QModelIndexList &indexes) const override;
+    QStringList mimeTypes() const override;
+    QHash<int, QByteArray> roleNames() const override;
+    QModelIndex sibling(int row, int column, const QModelIndex &index) const override;
+    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
+    QSize span(const QModelIndex &index) const override;
+    Qt::DropActions supportedDragActions() const override;
+    Qt::DropActions supportedDropActions() const override;
+    int blankRows() const;
+    void setBlankRows(int newBlankRows);
+    virtual QVariant dataForBlankRow(int row, int column, int role) const;
+    virtual Qt::ItemFlags flagsForBlankRow(int row, int column) const;
+public slots:
+    void revert() override;
+    bool submit() override;
 
 private:
     void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles);
@@ -69,6 +88,7 @@ private:
     void onLayoutAboutToBeChanged(const QList<QPersistentModelIndex> &parents, QAbstractItemModel::LayoutChangeHint hint);
     void onLayoutChanged(const QList<QPersistentModelIndex> &parents, QAbstractItemModel::LayoutChangeHint hint);
     QList<QMetaObject::Connection> m_sourceConnections;
+    int m_blankRows;
 };
 
 #endif // BLANKROWPROXY_H
