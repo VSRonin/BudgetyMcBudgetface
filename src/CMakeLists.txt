@@ -67,41 +67,41 @@ source_group(Widgets FILES ${widgets_SRCS})
 source_group(Delegates FILES ${delegates_SRCS})
 source_group(Dialogs FILES ${dialogs_SRCS})
 source_group(Backend FILES ${backend_SRCS})
-set(TestBudget_SRCS
+set(BudgetFace_SRCS
     ${backend_SRCS}
 )
-set(TestBudgetUi_SRCS
+set(BudgetFaceUi_SRCS
     ${ui_SRCS}
     ${delegates_SRCS}
     ${dialogs_SRCS}
     ${widgets_SRCS}
 )
 if (FALSE)
-    qt6_add_library(TestBudgetLib STATIC ${TestBudget_SRCS})
-    add_library(TestBudgetLib::TestBudgetLib ALIAS TestBudgetLib)
-    target_compile_definitions(TestBudgetLib PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
-    target_include_directories(TestBudgetLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-    target_link_libraries(TestBudgetLib PUBLIC
+    qt6_add_library(BudgetFaceLib STATIC ${BudgetFace_SRCS})
+    add_library(BudgetFaceLib::BudgetFaceLib ALIAS BudgetFaceLib)
+    target_compile_definitions(BudgetFaceLib PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
+    target_include_directories(BudgetFaceLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+    target_link_libraries(BudgetFaceLib PUBLIC
         QtModelUtilities::QtModelUtilities
         Qt::Core
         Qt::Sql
     )
-    set_target_properties(TestBudgetLib PROPERTIES
+    set_target_properties(BudgetFaceLib PROPERTIES
         AUTOMOC ON
         AUTORCC ON
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON
         VERSION ${VERSION_SHORT}
     )
-    qt6_add_library(TestBudgetUiLib STATIC ${TestBudgetUi_SRCS})
-    add_library(TestBudgetUiLib::TestBudgetUiLib ALIAS TestBudgetUiLib)
-    target_include_directories(TestBudgetUiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-    target_link_libraries(TestBudgetUiLib PUBLIC
-        TestBudgetLib::TestBudgetLib
+    qt6_add_library(BudgetFaceUiLib STATIC ${BudgetFaceUi_SRCS})
+    add_library(BudgetFaceUiLib::BudgetFaceUiLib ALIAS BudgetFaceUiLib)
+    target_include_directories(BudgetFaceUiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+    target_link_libraries(BudgetFaceUiLib PUBLIC
+        BudgetFaceLib::BudgetFaceLib
         Qt::Gui
         Qt::Widgets
     )
-    set_target_properties(TestBudgetUiLib PROPERTIES
+    set_target_properties(BudgetFaceUiLib PROPERTIES
         AUTOMOC ON
         AUTOUIC ON
         AUTORCC ON
@@ -109,40 +109,40 @@ if (FALSE)
         CXX_STANDARD_REQUIRED ON
         VERSION ${VERSION_SHORT}
     )
-    qt6_add_executable(TestBudget guimain.cpp)
-    target_link_libraries(TestBudget PUBLIC
-        TestBudgetUiLib::TestBudgetUiLib
+    qt6_add_executable(BudgetyMcBudgetface guimain.cpp)
+    target_link_libraries(BudgetyMcBudgetface PUBLIC
+        BudgetFaceUiLib::BudgetFaceUiLib
     )
 else()
-    qt6_add_executable(TestBudget guimain.cpp ${TestBudget_SRCS} ${TestBudgetUi_SRCS})
-    target_compile_definitions(TestBudget PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
-    target_include_directories(TestBudget PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-    target_link_libraries(TestBudget PUBLIC
+    qt6_add_executable(BudgetyMcBudgetface guimain.cpp ${BudgetFace_SRCS} ${BudgetFaceUi_SRCS})
+    target_compile_definitions(BudgetyMcBudgetface PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
+    target_include_directories(BudgetyMcBudgetface PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+    target_link_libraries(BudgetyMcBudgetface PUBLIC
         QtModelUtilities::QtModelUtilities
         Qt::Core
         Qt::Sql
         Qt::Gui
         Qt::Widgets
     )
-    set_target_properties(TestBudget PROPERTIES
+    set_target_properties(BudgetyMcBudgetface PROPERTIES
         AUTOMOC ON
         AUTOUIC ON
         AUTORCC ON
     )
 endif()
-set_target_properties(TestBudget PROPERTIES
+set_target_properties(BudgetyMcBudgetface PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
     VERSION ${VERSION_SHORT}
 )
-install(TARGETS TestBudget
-    BUNDLE DESTINATION "TestBudget"
-    RUNTIME DESTINATION "TestBudget"
+install(TARGETS BudgetyMcBudgetface
+    BUNDLE DESTINATION "BudgetyMcBudgetface"
+    RUNTIME DESTINATION "BudgetyMcBudgetface"
 )
 qt_generate_deploy_app_script(
-    TARGET TestBudget
+    TARGET BudgetyMcBudgetface
     OUTPUT_SCRIPT deploy_script
 )
 install(SCRIPT ${deploy_script})

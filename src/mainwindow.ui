@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Budgeter [*]</string>
+   <string>Budgety McBudgetface [*]</string>
   </property>
   <widget class="CentralWidget" name="centralwidget"/>
   <widget class="QMenuBar" name="menubar">

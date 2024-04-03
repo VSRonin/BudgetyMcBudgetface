@@ -41,8 +41,7 @@ bool OfflineSqlTable::setData(const QModelIndex &index, const QVariant &value, i
         if (i > 0)
             selectQueryString += QLatin1String("AND ");
         selectQueryString += db.driver()->escapeIdentifier(fieldName(i), QSqlDriver::FieldName);
-        const QVariant currData = data(index.sibling(index.row(), i));
-        if (currData.isValid())
+        if (data(index.sibling(index.row(), i)).isValid())
             selectQueryString += QLatin1String("=? ");
         else
             selectQueryString += QLatin1String(" IS NULL ");
