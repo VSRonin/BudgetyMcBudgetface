@@ -29,6 +29,7 @@ MainObject::MainObject(QObject *parent)
     , m_accountsModel(new OfflineSqlTable(this))
     , m_categoriesModel(new OfflineSqlTable(this))
     , m_currenciesModel(new OfflineSqlTable(this))
+    , m_movementTypesModel(new OfflineSqlTable(this))
     , m_accountTypesModel(new OfflineSqlTable(this))
     , m_familyModel(new OfflineSqlTable(this))
     , m_dirty(false)
@@ -38,9 +39,11 @@ MainObject::MainObject(QObject *parent)
     m_accountsModel->setTable(QStringLiteral("Accounts"));
     m_categoriesModel->setTable(QStringLiteral("Categories"));
     m_currenciesModel->setTable(QStringLiteral("Currencies"));
+    m_movementTypesModel->setTable(QStringLiteral("MovementTypes"));
     m_accountTypesModel->setTable(QStringLiteral("AccountTypes"));
     m_familyModel->setTable(QStringLiteral("Family"));
-    for (OfflineSqlTable *model : {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_accountTypesModel, m_familyModel})
+    for (OfflineSqlTable *model :
+         {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_accountTypesModel, m_familyModel, m_movementTypesModel})
         connect(model, &QAbstractItemModel::dataChanged, this, std::bind(&MainObject::setDirty, this, true));
 }
 
@@ -74,6 +77,11 @@ QAbstractItemModel *MainObject::accountTypesModel() const
 QAbstractItemModel *MainObject::familyModel() const
 {
     return m_familyModel;
+}
+
+QAbstractItemModel *MainObject::movementTypesModel() const
+{
+    return m_movementTypesModel;
 }
 
 bool MainObject::addFamilyMember(const QString &name, const QDate &birthday, double income, int incomeCurr)
@@ -345,26 +353,89 @@ bool MainObject::loadBudget(const QString &path)
     return true;
 }
 
-bool MainObject::importStatement(const QString &path, ImportFormats format)
+bool MainObject::importStatement(int account, const QString &path, ImportFormats format)
 {
     QFile source(path);
     if (!source.open(QFile::ReadOnly | QFile::Text))
         return false;
     switch (format) {
     case MainObject::ifBarclays:
-        return importBarclaysStatement(&source);
+        return importBarclaysStatement(account, &source);
     case MainObject::ifNatwest:
         break;
     case MainObject::ifRevolut:
         break;
     }
+    Q_UNREACHABLE();
+    return false;
 }
 
-bool MainObject::importBarclaysStatement(QFile *source)
+int MainObject::idForCurrency(const QString &curr) const
 {
-    QFile source(path);
-    if (!source.open(QFile::ReadOnly | QFile::Text))
+    for (int i = 0; i < m_currenciesModel->rowCount(); ++i) {
+        if (m_currenciesModel->index(i, ccCurrency).data().toString().trimmed().compare(curr, Qt::CaseInsensitive) == 0)
+            return m_currenciesModel->index(i, ccId).data().toInt();
+    }
+    return -1;
+}
+
+int MainObject::idForMovementType(const QString &mov) const
+{
+    for (int i = 0; i < m_movementTypesModel->rowCount(); ++i) {
+        if (m_movementTypesModel->index(i, mtcName).data().toString().trimmed().compare(mov, Qt::CaseInsensitive) == 0)
+            return m_movementTypesModel->index(i, mtcId).data().toInt();
+    }
+    return -1;
+}
+
+bool MainObject::importBarclaysStatement(int account, QFile *source)
+{
+    QTextStream stream(source);
+    QString line;
+    bool needCheckFirstLine = true;
+    const int gbpID = idForCurrency(QStringLiteral("GBP"));
+    if (gbpID < 0)
         return false;
+    QList<QDate> opDates;
+    QList<double> amounts;
+    QList<QString> payTypes;
+    QList<QString> descriptions;
+    QList<int> movTypes;
+    while (stream.readLineInto(&line)) {
+        auto parts = line.split(QLatin1Char(','), Qt::KeepEmptyParts);
+        if (line.trimmed().isEmpty())
+            continue;
+        while (parts.size() > 6)
+            parts[parts.size() - 2] += parts.takeLast();
+        if (parts.size() != 6)
+            return false;
+        if (needCheckFirstLine) {
+            const QString expectedHeaders[6] = {QStringLiteral("Number"), QStringLiteral("Date"),        QStringLiteral("Account"),
+                                                QStringLiteral("Amount"), QStringLiteral("Subcategory"), QStringLiteral("Memo")};
+            for (int i = 0; i < 6; ++i) {
+                if (parts.at(i).trimmed().compare(expectedHeaders[i], Qt::CaseInsensitive) != 0)
+                    return false;
+            }
+            needCheckFirstLine = false;
+        } else {
+            bool amountCheck = false;
+            const double amnt = parts.at(3).trimmed().toDouble(&amountCheck);
+            if (!amountCheck)
+                return false;
+            if (qFuzzyIsNull(amnt))
+                continue;
+            amounts.append(amnt);
+            opDates.append(QDate::fromString(parts.at(1).trimmed(), QStringLiteral("dd/MM/yyyy")));
+            payTypes.append(parts.at(4).trimmed());
+            descriptions.append(parts.at(5).trimmed());
+            if (amnt < 0)
+                movTypes.append(idForMovementType(QStringLiteral("Expense")));
+            else
+                movTypes.append(idForMovementType(QStringLiteral("Income")));
+        }
+    }
+    return addTransactions(account, opDates, {gbpID}, amounts, payTypes, descriptions, QList<int>(), QList<int>(), movTypes, QList<int>(),
+                           QList<double>());
 }
 
 QDate MainObject::lastTransactionDate() const
@@ -373,9 +444,13 @@ QDate MainObject::lastTransactionDate() const
     if (!db.isOpen())
         return QDate();
     QSqlQuery lastTransactionQuery(db);
-    lastTransactionQuery.prepare(QStringLiteral("SELECT TOP 1 OperationDate FROM Transactions ORDER BY OperationDate DESC"));
-    if (!lastTransactionQuery.exec())
+    lastTransactionQuery.prepare(QStringLiteral("SELECT OperationDate FROM Transactions ORDER BY OperationDate DESC LIMIT 1"));
+    if (!lastTransactionQuery.exec()) {
+#ifdef QT_DEBUG
+        qDebug() << lastTransactionQuery.lastQuery() << lastTransactionQuery.lastError().text();
+#endif
         return QDate();
+    }
     if (!lastTransactionQuery.next())
         return QDate();
     return QDate::fromString(lastTransactionQuery.value(0).toString(), Qt::ISODate);
@@ -410,6 +485,103 @@ void MainObject::setDirty(bool dirty)
 
 void MainObject::reselectModels()
 {
-    for (OfflineSqlTable *model : {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_accountTypesModel, m_familyModel})
+    for (OfflineSqlTable *model :
+         {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_movementTypesModel, m_accountTypesModel, m_familyModel})
         model->setTable(model->tableName());
+}
+
+bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QList<int> &curr, const QList<double> &amount,
+                                 const QList<QString> &payType, const QList<QString> &desc, const QList<int> &categ, const QList<int> &subcateg,
+                                 const QList<int> &movementType, const QList<int> &destination, const QList<double> &exchangeRate)
+{
+
+    QSqlDatabase db = openDb();
+    if (!db.isOpen())
+        return false;
+    if (!db.transaction())
+        return false;
+    if (account < 0 || opDt.isEmpty() || curr.isEmpty() || amount.isEmpty())
+        return false;
+    int newID = 0;
+    for (int i = 0, maxI = m_transactionsModel->rowCount(); i < maxI; ++i)
+        newID = std::max(newID, m_transactionsModel->index(i, tcId).data().toInt());
+    auto maxI = opDt.size();
+    if (maxI > 1 && curr.size() > 1 && curr.size() != maxI)
+        return false;
+    maxI = std::max(maxI, curr.size());
+    if (maxI > 1 && amount.size() > 1 && amount.size() != maxI)
+        return false;
+    maxI = std::max(maxI, amount.size());
+    if (maxI > 1 && payType.size() > 1 && payType.size() != maxI)
+        return false;
+    maxI = std::max(maxI, payType.size());
+    if (maxI > 1 && desc.size() > 1 && desc.size() != maxI)
+        return false;
+    maxI = std::max(maxI, desc.size());
+    if (maxI > 1 && categ.size() > 1 && categ.size() != maxI)
+        return false;
+    maxI = std::max(maxI, categ.size());
+    if (maxI > 1 && subcateg.size() > 1 && subcateg.size() != maxI)
+        return false;
+    maxI = std::max(maxI, subcateg.size());
+    if (maxI > 1 && movementType.size() > 1 && movementType.size() != maxI)
+        return false;
+    maxI = std::max(maxI, movementType.size());
+    if (maxI > 1 && destination.size() > 1 && destination.size() != maxI)
+        return false;
+    maxI = std::max(maxI, destination.size());
+    if (maxI > 1 && exchangeRate.size() > 1 && exchangeRate.size() != maxI)
+        return false;
+    maxI = std::max(maxI, exchangeRate.size());
+    for (decltype(maxI) i = 0; i < maxI; ++i) {
+        QSqlQuery addTransactionQuery(db);
+        addTransactionQuery.prepare(
+                QStringLiteral("INSERT INTO Transactions (Id, Account, OperationDate, Currency, Amount, PaymentType, Description, Category, "
+                               "Subcategory, MovementType, DestinationAccount, ExchangeRate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"));
+        addTransactionQuery.addBindValue(++newID);
+        addTransactionQuery.addBindValue(account);
+        addTransactionQuery.addBindValue((opDt.size() > 1 ? opDt.at(i) : opDt.first()).toString(Qt::ISODate));
+        addTransactionQuery.addBindValue(curr.size() > 1 ? curr.at(i) : curr.first());
+        addTransactionQuery.addBindValue(amount.size() > 1 ? amount.at(i) : amount.first());
+        if (payType.isEmpty())
+            addTransactionQuery.addBindValue(QVariant(QMetaType::fromType<QString>()));
+        else
+            addTransactionQuery.addBindValue(payType.size() > 1 ? payType.at(i) : payType.first());
+        if (desc.isEmpty())
+            addTransactionQuery.addBindValue(QVariant(QMetaType::fromType<QString>()));
+        else
+            addTransactionQuery.addBindValue(desc.size() > 1 ? desc.at(i) : desc.first());
+        if (categ.isEmpty())
+            addTransactionQuery.addBindValue(QVariant(QMetaType::fromType<int>()));
+        else
+            addTransactionQuery.addBindValue(categ.size() > 1 ? categ.at(i) : categ.first());
+        if (subcateg.isEmpty())
+            addTransactionQuery.addBindValue(QVariant(QMetaType::fromType<int>()));
+        else
+            addTransactionQuery.addBindValue(subcateg.size() > 1 ? subcateg.at(i) : subcateg.first());
+        if (movementType.isEmpty())
+            addTransactionQuery.addBindValue(QVariant(QMetaType::fromType<int>()));
+        else
+            addTransactionQuery.addBindValue(movementType.size() > 1 ? movementType.at(i) : movementType.first());
+        if (destination.isEmpty())
+            addTransactionQuery.addBindValue(QVariant(QMetaType::fromType<int>()));
+        else
+            addTransactionQuery.addBindValue(destination.size() > 1 ? destination.at(i) : destination.first());
+        if (exchangeRate.isEmpty())
+            addTransactionQuery.addBindValue(QVariant(QMetaType::fromType<double>()));
+        else
+            addTransactionQuery.addBindValue(exchangeRate.size() > 1 ? exchangeRate.at(i) : movementType.first());
+        if (!addTransactionQuery.exec()) {
+#ifdef QT_DEBUG
+            qDebug() << addTransactionQuery.lastQuery() << addTransactionQuery.lastError().text();
+#endif
+            Q_ASSUME(db.rollback());
+            return false;
+        }
+    }
+    if (!db.commit())
+        return false;
+    m_transactionsModel->select();
+    setDirty(true);
+    return true;
 }

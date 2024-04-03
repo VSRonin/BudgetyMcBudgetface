@@ -15,6 +15,9 @@
 #include <QSqlQuery>
 #include <QSqlDriver>
 #include <QSqlRecord>
+#ifdef QT_DEBUG
+#    include <QSqlError>
+#endif
 OfflineSqlTable::OfflineSqlTable(QObject *parent)
     : OfflineSqlQueryModel(parent)
 { }
@@ -27,22 +30,39 @@ bool OfflineSqlTable::setData(const QModelIndex &index, const QVariant &value, i
         return false;
     QSqlDatabase db = openDb();
     QString selectQueryString = QLatin1String("UPDATE ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName) + QLatin1String(" SET ")
-            + db.driver()->escapeIdentifier(fieldName(index.column()), QSqlDriver::FieldName) + QLatin1String("=? WHERE ");
+            + db.driver()->escapeIdentifier(fieldName(index.column()), QSqlDriver::FieldName) + QLatin1String("=");
+    if (value.isValid())
+        selectQueryString += QLatin1Char('?');
+    else
+        selectQueryString += QLatin1String("NULL");
+    selectQueryString += QLatin1String(" WHERE ");
     const int colCount = columnCount();
     for (int i = 0; i < colCount; ++i) {
         if (i > 0)
             selectQueryString += QLatin1String("AND ");
-        selectQueryString += db.driver()->escapeIdentifier(fieldName(i), QSqlDriver::FieldName) + QLatin1String("=? ");
+        selectQueryString += db.driver()->escapeIdentifier(fieldName(i), QSqlDriver::FieldName);
+        const QVariant currData = data(index.sibling(index.row(), i));
+        if (currData.isValid())
+            selectQueryString += QLatin1String("=? ");
+        else
+            selectQueryString += QLatin1String(" IS NULL ");
     }
     QSqlQuery selectQuery(db);
     selectQuery.prepare(selectQueryString);
-    selectQuery.addBindValue(value);
-    for (int i = 0; i < colCount; ++i)
-        selectQuery.addBindValue(data(index.sibling(index.row(), i)));
+    if (value.isValid())
+        selectQuery.addBindValue(value);
+    for (int i = 0; i < colCount; ++i) {
+        const QVariant currData = data(index.sibling(index.row(), i));
+        if (currData.isValid())
+            selectQuery.addBindValue(currData);
+    }
     if (selectQuery.exec()) {
         setInternalData(index, value);
         return true;
     }
+#ifdef QT_DEBUG
+    qDebug().noquote() << selectQuery.lastQuery() << selectQuery.lastError().text();
+#endif
     return false;
 }
 

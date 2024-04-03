@@ -37,6 +37,8 @@ private:
     void onRemoveAccount();
     void onNameFilterChanged(const QString &text);
     void onCurrencyFilterChanged(int newIndex);
+    void onAccountTypeFilterChanged(int newIndex);
+    void onOwnerFilterChanged(int newIndex);
     MainObject *m_object;
     Ui::AccountsTab *ui;
     RelationalDelegate *m_currencyDelegate;
@@ -44,6 +46,8 @@ private:
     OwnerDelegate *m_ownerDelegate;
     AndFilterProxy *m_filterProxy;
     BlankRowProxy *m_currencyProxy;
+    BlankRowProxy *m_accountTypeProxy;
+    BlankRowProxy *m_ownerProxy;
 };
 
 #endif // ACCOUNTSTAB_H

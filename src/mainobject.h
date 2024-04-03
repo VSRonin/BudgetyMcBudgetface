@@ -42,7 +42,8 @@ public:
     enum AccountTypeModelColumn { atcId, atcName };
     enum ImportFormats { ifBarclays, ifNatwest, ifRevolut };
     enum FamilyModelColumn { fcId, fcName, fcBirthday, fcIncome, fcIncomeCurrency };
-
+    enum MovementTypeModelColumn { mtcId, mtcName };
+    enum CategoriesModelColumn { cacId, cacName };
     explicit MainObject(QObject *parent = nullptr);
     ~MainObject();
     bool createBlankBudget();
@@ -50,6 +51,7 @@ public:
     QAbstractItemModel *accountsModel() const;
     QAbstractItemModel *categoriesModel() const;
     QAbstractItemModel *currenciesModel() const;
+    QAbstractItemModel *movementTypesModel() const;
     QAbstractItemModel *accountTypesModel() const;
     QAbstractItemModel *familyModel() const;
     bool addFamilyMember(const QString &name, const QDate &birthday, double income, int incomeCurr);
@@ -62,8 +64,8 @@ public:
     bool isDirty() const;
     bool saveBudget(const QString &path);
     bool loadBudget(const QString &path);
-    bool importStatement(const QString &path, ImportFormats format);
-    bool importBarclaysStatement(QFile *source);
+    bool importStatement(int account, const QString &path, ImportFormats format);
+    bool importBarclaysStatement(int account, QFile *source);
     QDate lastTransactionDate() const;
     const QString &baseCurrency() const;
     bool setBaseCurrency(const QString &crncy);
@@ -76,6 +78,11 @@ signals:
     void baseCurrencyChanged();
 
 private:
+    bool addTransactions(int account, const QList<QDate> &opDt, const QList<int> &curr, const QList<double> &amount, const QList<QString> &payType,
+                         const QList<QString> &desc, const QList<int> &categ, const QList<int> &subcateg, const QList<int> &movementType,
+                         const QList<int> &destination, const QList<double> &exchangeRate);
+    int idForCurrency(const QString &curr) const;
+    int idForMovementType(const QString &mov) const;
     void setDirty(bool dirty);
     void reselectModels();
     bool removeAccounts(const QList<int> &ids, bool transaction);
@@ -83,6 +90,7 @@ private:
     OfflineSqlTable *m_accountsModel;
     OfflineSqlTable *m_categoriesModel;
     OfflineSqlTable *m_currenciesModel;
+    OfflineSqlTable *m_movementTypesModel;
     OfflineSqlTable *m_accountTypesModel;
     OfflineSqlTable *m_familyModel;
     bool m_dirty;

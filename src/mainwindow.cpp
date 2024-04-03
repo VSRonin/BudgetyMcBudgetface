@@ -19,6 +19,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QCloseEvent>
+#include <QStandardPaths>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -83,7 +84,9 @@ bool MainWindow::onFileSave()
 bool MainWindow::onFileSaveAs()
 {
     Q_ASSERT(m_object);
-    QString path = QFileDialog::getSaveFileName(this, tr("Save Budget"), m_lastSavedPath, tr("Budget Files (*.buddb)"));
+    const QString startingPath =
+            m_lastSavedPath.isEmpty() ? QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).first() : m_lastSavedPath;
+    QString path = QFileDialog::getSaveFileName(this, tr("Save Budget"), startingPath, tr("Budget Files (*.buddb)"));
     if (path.isEmpty())
         return false;
     if (!m_object->saveBudget(path)) {
@@ -97,7 +100,9 @@ bool MainWindow::onFileSaveAs()
 bool MainWindow::onFileLoad()
 {
     Q_ASSERT(m_object);
-    QString path = QFileDialog::getOpenFileName(this, tr("Open Budget"), m_lastSavedPath, tr("Budget Files (*.buddb)"));
+    const QString startingPath =
+            m_lastSavedPath.isEmpty() ? QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).first() : m_lastSavedPath;
+    QString path = QFileDialog::getOpenFileName(this, tr("Open Budget"), startingPath, tr("Budget Files (*.buddb)"));
     if (path.isEmpty())
         return false;
     if (!m_object->loadBudget(path)) {

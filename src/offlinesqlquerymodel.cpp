@@ -15,6 +15,7 @@
 #include <QSqlQuery>
 #include <QSqlDriver>
 #include <QSqlRecord>
+#include <QSqlResult>
 OfflineSqlQueryModel::OfflineSqlQueryModel(QObject *parent)
     : QAbstractTableModel(parent)
     , m_colCount(0)
@@ -116,14 +117,19 @@ bool OfflineSqlQueryModel::select()
         if (m_colCount == 0) {
             const QSqlRecord selectRecord = m_query.record();
             m_colCount = selectRecord.count();
-            m_rowCount = qMax(0, m_query.size());
+            m_rowCount = std::max(0, m_query.size());
             m_headers.reserve(m_colCount);
             for (int i = 0; i < m_colCount; ++i)
                 m_headers.append(selectRecord.fieldName(i));
-            m_data.reserve(m_colCount * m_rowCount);
+            m_data.reserve(std::max(m_colCount, m_colCount * m_rowCount));
         }
-        for (int i = 0; i < m_colCount; ++i)
-            m_data.append(m_query.value(i));
+        for (int i = 0; i < m_colCount; ++i) {
+            const QVariant tempValue = m_query.value(i); // needs to call value before isNull
+            if (m_query.isNull(i))
+                m_data.append(QVariant());
+            else
+                m_data.append(tempValue);
+        }
         ++newRowCount;
     }
     if (m_rowCount == 0)

@@ -28,6 +28,9 @@ set(dialogs_SRCS
     addfamilymemberdialog.h
     addfamilymemberdialog.cpp
     addfamilymemberdialog.ui
+    selectaccountdialog.h
+    selectaccountdialog.cpp
+    selectaccountdialog.ui
 )
 set(widgets_SRCS
     multichoicecombo.h

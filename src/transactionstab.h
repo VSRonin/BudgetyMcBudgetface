@@ -18,7 +18,11 @@
 namespace Ui {
 class TransactionsTab;
 }
-
+class RelationalDelegate;
+class AndFilterProxy;
+class BlankRowProxy;
+class DecimalDelegate;
+class IsoDateDelegate;
 class TransactionsTab : public QWidget
 {
     Q_OBJECT
@@ -29,10 +33,19 @@ public:
     void setMainObject(MainObject *mainObj);
 
 private:
+    void onCurrencyFilterChanged(int newIndex);
     void importStatement(MainObject::ImportFormats format);
     void onRemoveTransactions();
     void refreshLastUpdate();
     MainObject *m_object;
+    AndFilterProxy *m_filterProxy;
+    RelationalDelegate *m_currencyDelegate;
+    RelationalDelegate *m_accountDelegate;
+    RelationalDelegate *m_categoryDelegate;
+    RelationalDelegate *m_movementTypeDelegate;
+    DecimalDelegate *m_amountDelegate;
+    IsoDateDelegate *m_opDateDelegate;
+    BlankRowProxy *m_currencyProxy;
     Ui::TransactionsTab *ui;
 };
 

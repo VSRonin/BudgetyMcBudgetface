@@ -10,6 +10,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
+#include "blankrowproxy.h"
+#include "decimaldelegate.h"
+#include "isodatedelegate.h"
+#include "multiplefilterproxy.h"
+#include "relationaldelegate.h"
+#include "selectaccountdialog.h"
 #include "transactionstab.h"
 #include "ui_transactionstab.h"
 #include <QMenu>
@@ -19,11 +25,21 @@
 TransactionsTab::TransactionsTab(QWidget *parent)
     : QWidget(parent)
     , m_object(nullptr)
+    , m_filterProxy(new AndFilterProxy(this))
+    , m_currencyDelegate(new RelationalDelegate(this))
+    , m_accountDelegate(new RelationalDelegate(this))
+    , m_categoryDelegate(new RelationalDelegate(this))
+    , m_movementTypeDelegate(new RelationalDelegate(this))
+    , m_amountDelegate(new DecimalDelegate(this))
+    , m_opDateDelegate(new IsoDateDelegate(this))
+    , m_currencyProxy(new BlankRowProxy(this))
     , ui(new Ui::TransactionsTab)
 
 {
     ui->setupUi(this);
     ui->lastUpdateLabel->hide();
+    ui->transactionView->setModel(m_filterProxy);
+    ui->currencyFilterCombo->setModel(m_currencyProxy);
     QMenu *importStatementsMenu = new QMenu(this);
     importStatementsMenu->addAction(ui->actionImport_Barclays);
     importStatementsMenu->addAction(ui->actionImport_Natwest);
@@ -33,6 +49,9 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     connect(ui->actionImport_Natwest, &QAction::triggered, this, std::bind(&TransactionsTab::importStatement, this, MainObject::ifNatwest));
     connect(ui->actionImport_Revolut, &QAction::triggered, this, std::bind(&TransactionsTab::importStatement, this, MainObject::ifRevolut));
     connect(ui->removeTransactionButton, &QPushButton::clicked, this, &TransactionsTab::onRemoveTransactions);
+    connect(ui->currencyFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onCurrencyFilterChanged);
+    connect(ui->transactionView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+            [this]() { ui->removeTransactionButton->setEnabled(!ui->transactionView->selectionModel()->selectedIndexes().isEmpty()); });
 }
 
 TransactionsTab::~TransactionsTab()
@@ -43,24 +62,49 @@ TransactionsTab::~TransactionsTab()
 void TransactionsTab::setMainObject(MainObject *mainObj)
 {
     m_object = mainObj;
-    ui->transactionView->setModel(m_object ? m_object->transactionsModel() : nullptr);
-    connect(ui->transactionView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
-            [this]() { ui->removeTransactionButton->setEnabled(!ui->transactionView->selectionModel()->selectedIndexes().isEmpty()); });
-    refreshLastUpdate();
+    if (m_object) {
+        m_filterProxy->setSourceModel(m_object->transactionsModel());
+        m_currencyProxy->setSourceModel(m_object->currenciesModel());
+        const auto setupView = [this]() {
+            ui->transactionView->setColumnHidden(MainObject::tcId, true);
+            ui->transactionView->setItemDelegateForColumn(MainObject::tcCurrency, m_currencyDelegate);
+            ui->transactionView->setItemDelegateForColumn(MainObject::tcAccount, m_accountDelegate);
+            ui->transactionView->setItemDelegateForColumn(MainObject::tcDestinationAccount, m_accountDelegate);
+            ui->transactionView->setItemDelegateForColumn(MainObject::tcCategory, m_categoryDelegate);
+            ui->transactionView->setItemDelegateForColumn(MainObject::tcMovementType, m_movementTypeDelegate);
+            ui->transactionView->setItemDelegateForColumn(MainObject::tcAmount, m_amountDelegate);
+            ui->transactionView->setItemDelegateForColumn(MainObject::tcOpDate, m_opDateDelegate);
+            ui->currencyFilterCombo->setModelColumn(MainObject::ccCurrency);
+            refreshLastUpdate();
+        };
+        connect(m_object->transactionsModel(), &QAbstractItemModel::rowsInserted, this, setupView);
+        connect(m_object->transactionsModel(), &QAbstractItemModel::modelReset, this, setupView);
+        setupView();
+    } else
+        ui->removeTransactionButton->setEnabled(false);
+    m_currencyDelegate->setRelationModel(m_object ? m_object->currenciesModel() : nullptr, MainObject::ccId, MainObject::ccCurrency);
+    m_accountDelegate->setRelationModel(m_object ? m_object->accountsModel() : nullptr, MainObject::acId, MainObject::acName);
+    m_categoryDelegate->setRelationModel(m_object ? m_object->categoriesModel() : nullptr, MainObject::cacId, MainObject::cacName);
+    m_movementTypeDelegate->setRelationModel(m_object ? m_object->movementTypesModel() : nullptr, MainObject::mtcId, MainObject::mtcName);
 }
 
 void TransactionsTab::importStatement(MainObject::ImportFormats format)
 {
+    Q_ASSERT(m_object);
+    SelectAccountDialog selectAccountDialog;
+    selectAccountDialog.setMainObject(m_object);
+    if (!selectAccountDialog.exec())
+        return;
     Q_ASSERT(!QStandardPaths::standardLocations(QStandardPaths::DownloadLocation).isEmpty());
     QString path = QFileDialog::getOpenFileName(
             this, tr("Open Statement"), QStandardPaths::standardLocations(QStandardPaths::DownloadLocation).first(), tr("Statement Files (*.csv)"));
     if (path.isEmpty())
         return;
-    Q_ASSERT(m_object);
-    if (!m_object->importStatement(path, format)) {
+    if (!m_object->importStatement(selectAccountDialog.selectedAccountId(), path, format)) {
         QMessageBox::critical(this, tr("Error"), tr("Error while importing the statement. The file might be currupted or in an unexpected format"));
         return;
     }
+    refreshLastUpdate();
 }
 
 void TransactionsTab::onRemoveTransactions()
@@ -88,4 +132,13 @@ void TransactionsTab::refreshLastUpdate()
     ui->lastUpdateLabel->setVisible(lastUpdDt.isValid());
     if (lastUpdDt.isValid())
         ui->lastUpdateLabel->setText(tr("Last Update: %1").arg(locale().toString(lastUpdDt)));
+}
+
+void TransactionsTab::onCurrencyFilterChanged(int newIndex)
+{
+    if (newIndex == 0)
+        return m_filterProxy->removeFilterFromColumn(MainObject::tcCurrency);
+    m_filterProxy->setRegExpFilter(
+            MainObject::tcCurrency,
+            QRegularExpression(QString::number(m_object->currenciesModel()->index(newIndex - 1, MainObject::ccId).data().toInt())));
 }

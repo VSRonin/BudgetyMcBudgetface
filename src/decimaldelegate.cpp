@@ -21,3 +21,9 @@ QString DecimalDelegate::displayText(const QVariant &value, const QLocale &local
     localeCopy.setNumberOptions(localeCopy.numberOptions() & (~QLocale::OmitGroupSeparator));
     return localeCopy.toString(value.toDouble(), 'f', 2);
 }
+
+void DecimalDelegate::initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const
+{
+    QStyledItemDelegate::initStyleOption(option, index);
+    option->displayAlignment = Qt::AlignVCenter | Qt::AlignRight;
+}

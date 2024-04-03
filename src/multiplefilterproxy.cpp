@@ -167,7 +167,9 @@ bool AndFilterProxy::filterAcceptsRow(int source_row, const QModelIndex &source_
                 currntIndex = sourceModel()->index(source_parent.row(), i, source_parent.parent());
             }
             for (auto dateRngIter = m_dateRangeFilter.at(i).constBegin(); dateRngIter != m_dateRangeFilter.at(i).constEnd(); ++dateRngIter) {
-                const QDate testDate = currntIndex.data(dateRngIter.key()).toDate();
+                const QVariant testDateVariant = currntIndex.data(dateRngIter.key());
+                const QDate testDate =
+                        testDateVariant.canConvert<QDate>() ? testDateVariant.toDate() : QDate::fromString(testDateVariant.toString(), Qt::ISODate);
                 if (!((testDate >= dateRngIter.value().first || dateRngIter.value().first.isNull())
                       && (testDate <= dateRngIter.value().second || dateRngIter.value().second.isNull())))
                     return false;

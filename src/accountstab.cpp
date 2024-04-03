@@ -50,13 +50,19 @@ AccountsTab::AccountsTab(QWidget *parent)
     , m_ownerDelegate(new OwnerDelegate(this))
     , m_filterProxy(new OwnerSorter(this))
     , m_currencyProxy(new BlankRowProxy(this))
+    , m_accountTypeProxy(new BlankRowProxy(this))
+    , m_ownerProxy(new BlankRowProxy(this))
 {
     ui->setupUi(this);
     ui->accountsView->setModel(m_filterProxy);
     ui->accountsView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->currencyFilterCombo->setModel(m_currencyProxy);
+    ui->accountTypeFilterCombo->setModel(m_accountTypeProxy);
+    ui->ownerFilterCombo->setModel(m_ownerProxy);
     connect(ui->nameFilterEdit, &QLineEdit::textChanged, this, &AccountsTab::onNameFilterChanged);
     connect(ui->currencyFilterCombo, &QComboBox::currentIndexChanged, this, &AccountsTab::onCurrencyFilterChanged);
+    connect(ui->accountTypeFilterCombo, &QComboBox::currentIndexChanged, this, &AccountsTab::onAccountTypeFilterChanged);
+    connect(ui->ownerFilterCombo, &QComboBox::currentIndexChanged, this, &AccountsTab::onOwnerFilterChanged);
     connect(ui->addAccountButton, &QPushButton::clicked, this, &AccountsTab::onAddAccount);
     connect(ui->removeAccountButton, &QPushButton::clicked, this, &AccountsTab::onRemoveAccount);
     connect(ui->accountsView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
@@ -74,12 +80,16 @@ void AccountsTab::setMainObject(MainObject *mainObj)
     if (m_object) {
         m_filterProxy->setSourceModel(m_object->accountsModel());
         m_currencyProxy->setSourceModel(m_object->currenciesModel());
+        m_accountTypeProxy->setSourceModel(m_object->accountTypesModel());
+        m_ownerProxy->setSourceModel(m_object->familyModel());
         const auto setupView = [this]() {
             ui->accountsView->setColumnHidden(MainObject::acId, true);
             ui->accountsView->setItemDelegateForColumn(MainObject::acCurrency, m_currencyDelegate);
             ui->accountsView->setItemDelegateForColumn(MainObject::acAccountType, m_accountTypeDelagate);
             ui->accountsView->setItemDelegateForColumn(MainObject::acOwner, m_ownerDelegate);
             ui->currencyFilterCombo->setModelColumn(MainObject::ccCurrency);
+            ui->accountTypeFilterCombo->setModelColumn(MainObject::atcName);
+            ui->ownerFilterCombo->setModelColumn(MainObject::fcName);
         };
         connect(m_object->accountsModel(), &QAbstractItemModel::rowsInserted, this, setupView);
         connect(m_object->accountsModel(), &QAbstractItemModel::modelReset, this, setupView);
@@ -135,4 +145,21 @@ void AccountsTab::onCurrencyFilterChanged(int newIndex)
     m_filterProxy->setRegExpFilter(
             MainObject::acCurrency,
             QRegularExpression(QString::number(m_object->currenciesModel()->index(newIndex - 1, MainObject::ccId).data().toInt())));
+}
+
+void AccountsTab::onAccountTypeFilterChanged(int newIndex)
+{
+    if (newIndex == 0)
+        return m_filterProxy->removeFilterFromColumn(MainObject::acAccountType);
+    m_filterProxy->setRegExpFilter(
+            MainObject::acAccountType,
+            QRegularExpression(QString::number(m_object->accountTypesModel()->index(newIndex - 1, MainObject::atcId).data().toInt())));
+}
+
+void AccountsTab::onOwnerFilterChanged(int newIndex)
+{
+    if (newIndex == 0)
+        return m_filterProxy->removeFilterFromColumn(MainObject::acOwner);
+    m_filterProxy->setRegExpFilter(
+            MainObject::acOwner, QRegularExpression(QString::number(m_object->familyModel()->index(newIndex - 1, MainObject::fcId).data().toInt())));
 }

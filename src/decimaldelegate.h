@@ -21,6 +21,9 @@ class DecimalDelegate : public QStyledItemDelegate
 public:
     explicit DecimalDelegate(QObject *parent = nullptr);
     QString displayText(const QVariant &value, const QLocale &locale) const override;
+
+protected:
+    void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override;
 };
 
 #endif
