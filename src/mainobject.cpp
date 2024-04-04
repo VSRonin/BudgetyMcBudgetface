@@ -475,6 +475,18 @@ bool MainObject::setBaseCurrency(const QString &crncy)
     return false;
 }
 
+void MainObject::setTransactionsFilter(const QList<TransactionModelColumn> &col, const QStringList &filter)
+{
+    Q_ASSERT(col.size()==filter.size());
+    QString filterString;
+    for(int i=0,maxI=col.size();i<maxI;++i){
+        if(i>0)
+            filterString += QStringLiteral(" AND ");
+        filterString += m_transactionsModel->headerData(col.at(i),Qt::Horizontal).toString() + filter.at(i);
+    }
+    m_transactionsModel->setFilter(filterString);
+}
+
 void MainObject::setDirty(bool dirty)
 {
     if (dirty == m_dirty)

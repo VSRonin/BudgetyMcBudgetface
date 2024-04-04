@@ -70,6 +70,7 @@ public:
     const QString &baseCurrency() const;
     bool setBaseCurrency(const QString &crncy);
     double exchangeRate(const QString &fromCrncy, const QString &toCrncy) const;
+    void setTransactionsFilter(const QList<TransactionModelColumn>& col, const QStringList& filter);
 public slots:
     void newBudget();
 signals:

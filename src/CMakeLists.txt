@@ -52,6 +52,8 @@ set(backend_SRCS
     globals.cpp
     mainobject.h
     mainobject.cpp
+)
+set(models_SRCS
     offlinesqltable.h
     offlinesqltable.cpp
     offlinesqlquerymodel.h
@@ -67,8 +69,10 @@ source_group(Widgets FILES ${widgets_SRCS})
 source_group(Delegates FILES ${delegates_SRCS})
 source_group(Dialogs FILES ${dialogs_SRCS})
 source_group(Backend FILES ${backend_SRCS})
+source_group(Models FILES ${models_SRCS})
 set(BudgetFace_SRCS
     ${backend_SRCS}
+    ${models_SRCS}
 )
 set(BudgetFaceUi_SRCS
     ${ui_SRCS}

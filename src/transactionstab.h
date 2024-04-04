@@ -33,7 +33,7 @@ public:
     void setMainObject(MainObject *mainObj);
 
 private:
-    void onCurrencyFilterChanged(int newIndex);
+    void onFilterChanged();
     void importStatement(MainObject::ImportFormats format);
     void onRemoveTransactions();
     void refreshLastUpdate();
@@ -46,6 +46,7 @@ private:
     DecimalDelegate *m_amountDelegate;
     IsoDateDelegate *m_opDateDelegate;
     BlankRowProxy *m_currencyProxy;
+    BlankRowProxy *m_accountProxy;
     Ui::TransactionsTab *ui;
 };
 

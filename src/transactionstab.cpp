@@ -33,6 +33,7 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     , m_amountDelegate(new DecimalDelegate(this))
     , m_opDateDelegate(new IsoDateDelegate(this))
     , m_currencyProxy(new BlankRowProxy(this))
+    , m_accountProxy(new BlankRowProxy(this))
     , ui(new Ui::TransactionsTab)
 
 {
@@ -40,6 +41,7 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     ui->lastUpdateLabel->hide();
     ui->transactionView->setModel(m_filterProxy);
     ui->currencyFilterCombo->setModel(m_currencyProxy);
+    ui->accountFilterCombo->setModel(m_accountProxy);
     QMenu *importStatementsMenu = new QMenu(this);
     importStatementsMenu->addAction(ui->actionImport_Barclays);
     importStatementsMenu->addAction(ui->actionImport_Natwest);
@@ -49,7 +51,10 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     connect(ui->actionImport_Natwest, &QAction::triggered, this, std::bind(&TransactionsTab::importStatement, this, MainObject::ifNatwest));
     connect(ui->actionImport_Revolut, &QAction::triggered, this, std::bind(&TransactionsTab::importStatement, this, MainObject::ifRevolut));
     connect(ui->removeTransactionButton, &QPushButton::clicked, this, &TransactionsTab::onRemoveTransactions);
-    connect(ui->currencyFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onCurrencyFilterChanged);
+    connect(ui->currencyFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onFilterChanged);
+    connect(ui->accountFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onFilterChanged);
+    connect(ui->fromDateEdit, &QDateEdit::dateChanged, this, &TransactionsTab::onFilterChanged);
+    connect(ui->toDateEdit, &QDateEdit::dateChanged, this, &TransactionsTab::onFilterChanged);
     connect(ui->transactionView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             [this]() { ui->removeTransactionButton->setEnabled(!ui->transactionView->selectionModel()->selectedIndexes().isEmpty()); });
 }
@@ -65,6 +70,7 @@ void TransactionsTab::setMainObject(MainObject *mainObj)
     if (m_object) {
         m_filterProxy->setSourceModel(m_object->transactionsModel());
         m_currencyProxy->setSourceModel(m_object->currenciesModel());
+        m_accountProxy->setSourceModel(m_object->accountsModel());
         const auto setupView = [this]() {
             ui->transactionView->setColumnHidden(MainObject::tcId, true);
             ui->transactionView->setItemDelegateForColumn(MainObject::tcCurrency, m_currencyDelegate);
@@ -75,6 +81,7 @@ void TransactionsTab::setMainObject(MainObject *mainObj)
             ui->transactionView->setItemDelegateForColumn(MainObject::tcAmount, m_amountDelegate);
             ui->transactionView->setItemDelegateForColumn(MainObject::tcOpDate, m_opDateDelegate);
             ui->currencyFilterCombo->setModelColumn(MainObject::ccCurrency);
+            ui->accountFilterCombo->setModelColumn(MainObject::acName);
             refreshLastUpdate();
         };
         connect(m_object->transactionsModel(), &QAbstractItemModel::rowsInserted, this, setupView);
@@ -134,11 +141,25 @@ void TransactionsTab::refreshLastUpdate()
         ui->lastUpdateLabel->setText(tr("Last Update: %1").arg(locale().toString(lastUpdDt)));
 }
 
-void TransactionsTab::onCurrencyFilterChanged(int newIndex)
+void TransactionsTab::onFilterChanged()
 {
-    if (newIndex == 0)
-        return m_filterProxy->removeFilterFromColumn(MainObject::tcCurrency);
-    m_filterProxy->setRegExpFilter(
-            MainObject::tcCurrency,
-            QRegularExpression(QString::number(m_object->currenciesModel()->index(newIndex - 1, MainObject::ccId).data().toInt())));
+    QList<MainObject::TransactionModelColumn> cols;
+    QStringList filters;
+    if (ui->currencyFilterCombo->currentIndex() > 0){
+        cols.append(MainObject::tcCurrency);
+        filters.append(QLatin1Char('=')+QString::number(m_object->currenciesModel()->index(ui->currencyFilterCombo->currentIndex() - 1, MainObject::ccId).data().toInt()));
+    }
+    if (ui->accountFilterCombo->currentIndex() > 0){
+        cols.append(MainObject::tcAccount);
+        filters.append(QLatin1Char('=')+QString::number(m_object->accountsModel()->index(ui->accountFilterCombo->currentIndex() - 1, MainObject::acId).data().toInt()));
+    }
+    if(ui->fromDateEdit->date()!=ui->fromDateEdit->minimumDate()){
+        cols.append(MainObject::tcOpDate);
+        filters.append(QLatin1String(">='")+ui->fromDateEdit->date().toString(Qt::ISODate)+QLatin1Char('\''));
+    }
+    if(ui->toDateEdit->date()!=ui->toDateEdit->minimumDate()){
+        cols.append(MainObject::tcOpDate);
+        filters.append(QLatin1String("<='")+ui->toDateEdit->date().toString(Qt::ISODate)+QLatin1Char('\''));
+    }
+    m_object->setTransactionsFilter(cols,filters);
 }
