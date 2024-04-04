@@ -145,21 +145,25 @@ void TransactionsTab::onFilterChanged()
 {
     QList<MainObject::TransactionModelColumn> cols;
     QStringList filters;
-    if (ui->currencyFilterCombo->currentIndex() > 0){
+    if (ui->currencyFilterCombo->currentIndex() > 0) {
         cols.append(MainObject::tcCurrency);
-        filters.append(QLatin1Char('=')+QString::number(m_object->currenciesModel()->index(ui->currencyFilterCombo->currentIndex() - 1, MainObject::ccId).data().toInt()));
+        filters.append(
+                QLatin1Char('=')
+                + QString::number(m_object->currenciesModel()->index(ui->currencyFilterCombo->currentIndex() - 1, MainObject::ccId).data().toInt()));
     }
-    if (ui->accountFilterCombo->currentIndex() > 0){
+    if (ui->accountFilterCombo->currentIndex() > 0) {
         cols.append(MainObject::tcAccount);
-        filters.append(QLatin1Char('=')+QString::number(m_object->accountsModel()->index(ui->accountFilterCombo->currentIndex() - 1, MainObject::acId).data().toInt()));
+        filters.append(
+                QLatin1Char('=')
+                + QString::number(m_object->accountsModel()->index(ui->accountFilterCombo->currentIndex() - 1, MainObject::acId).data().toInt()));
     }
-    if(ui->fromDateEdit->date()!=ui->fromDateEdit->minimumDate()){
+    if (ui->fromDateEdit->date() != ui->fromDateEdit->minimumDate()) {
         cols.append(MainObject::tcOpDate);
-        filters.append(QLatin1String(">='")+ui->fromDateEdit->date().toString(Qt::ISODate)+QLatin1Char('\''));
+        filters.append(QLatin1String(">='") + ui->fromDateEdit->date().toString(Qt::ISODate) + QLatin1Char('\''));
     }
-    if(ui->toDateEdit->date()!=ui->toDateEdit->minimumDate()){
+    if (ui->toDateEdit->date() != ui->toDateEdit->minimumDate()) {
         cols.append(MainObject::tcOpDate);
-        filters.append(QLatin1String("<='")+ui->toDateEdit->date().toString(Qt::ISODate)+QLatin1Char('\''));
+        filters.append(QLatin1String("<='") + ui->toDateEdit->date().toString(Qt::ISODate) + QLatin1Char('\''));
     }
-    m_object->setTransactionsFilter(cols,filters);
+    m_object->setTransactionsFilter(cols, filters);
 }

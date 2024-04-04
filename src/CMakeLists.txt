@@ -54,8 +54,8 @@ set(backend_SRCS
     mainobject.cpp
 )
 set(models_SRCS
-    offlinesqltable.h
-    offlinesqltable.cpp
+    offlinesqlitetable.h
+    offlinesqlitetable.cpp
     offlinesqlquerymodel.h
     offlinesqlquerymodel.cpp
     multiplefilterproxy.h

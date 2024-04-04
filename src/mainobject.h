@@ -15,7 +15,7 @@
 #define MAINOBJECT_H
 #include <QObject>
 #include <QDate>
-class OfflineSqlTable;
+class OfflineSqliteTable;
 class QAbstractItemModel;
 class QFile;
 class MainObject : public QObject
@@ -70,7 +70,7 @@ public:
     const QString &baseCurrency() const;
     bool setBaseCurrency(const QString &crncy);
     double exchangeRate(const QString &fromCrncy, const QString &toCrncy) const;
-    void setTransactionsFilter(const QList<TransactionModelColumn>& col, const QStringList& filter);
+    void setTransactionsFilter(const QList<TransactionModelColumn> &col, const QStringList &filter);
 public slots:
     void newBudget();
 signals:
@@ -87,13 +87,13 @@ private:
     void setDirty(bool dirty);
     void reselectModels();
     bool removeAccounts(const QList<int> &ids, bool transaction);
-    OfflineSqlTable *m_transactionsModel;
-    OfflineSqlTable *m_accountsModel;
-    OfflineSqlTable *m_categoriesModel;
-    OfflineSqlTable *m_currenciesModel;
-    OfflineSqlTable *m_movementTypesModel;
-    OfflineSqlTable *m_accountTypesModel;
-    OfflineSqlTable *m_familyModel;
+    OfflineSqliteTable *m_transactionsModel;
+    OfflineSqliteTable *m_accountsModel;
+    OfflineSqliteTable *m_categoriesModel;
+    OfflineSqliteTable *m_currenciesModel;
+    OfflineSqliteTable *m_movementTypesModel;
+    OfflineSqliteTable *m_accountTypesModel;
+    OfflineSqliteTable *m_familyModel;
     bool m_dirty;
     QString m_baseCurrency;
 };

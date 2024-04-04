@@ -11,28 +11,49 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef OFFLINESQLTABLE_H
-#define OFFLINESQLTABLE_H
-#include "offlinesqlquerymodel.h"
+#ifndef OFFLINESQLITETABLE_H
+#define OFFLINESQLITETABLE_H
+#include <QAbstractTableModel>
 #include <QVector>
 #include <QVariant>
-class OfflineSqlTable : public OfflineSqlQueryModel
+#include <QSqlQuery>
+class OfflineSqliteTable : public QAbstractTableModel
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(OfflineSqlTable)
+    Q_DISABLE_COPY_MOVE(OfflineSqliteTable)
 public:
-    explicit OfflineSqlTable(QObject *parent = nullptr);
+    explicit OfflineSqliteTable(QObject *parent = nullptr);
     virtual void setTable(const QString &tableName);
     virtual void setFilter(const QString &filter);
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     QString tableName() const;
     QString filter() const;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) override;
+    virtual QString fieldName(int index) const;
+    virtual bool select();
+
+protected:
+    virtual bool getTableStructure();
+    virtual void setQuery(const QString &query);
+    virtual void setQuery(QSqlQuery &&query);
+    virtual bool setInternalData(const QModelIndex &index, const QVariant &value);
 
 private:
     QSqlQuery createQuery() const;
     QString m_tableName;
     QString m_filter;
+    QSqlQuery m_query;
+    QVariantList m_data;
+    QVariantList m_headers;
+    QStringList m_fields;
+    int m_colCount;
+    int m_rowCount;
+    bool m_needTableInfo;
 };
 
 #endif

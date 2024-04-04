@@ -12,7 +12,7 @@
 \****************************************************************************/
 #include "mainobject.h"
 #include "globals.h"
-#include "offlinesqltable.h"
+#include "offlinesqlitetable.h"
 #include <QStandardItemModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
@@ -25,13 +25,13 @@
 #endif
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
-    , m_transactionsModel(new OfflineSqlTable(this))
-    , m_accountsModel(new OfflineSqlTable(this))
-    , m_categoriesModel(new OfflineSqlTable(this))
-    , m_currenciesModel(new OfflineSqlTable(this))
-    , m_movementTypesModel(new OfflineSqlTable(this))
-    , m_accountTypesModel(new OfflineSqlTable(this))
-    , m_familyModel(new OfflineSqlTable(this))
+    , m_transactionsModel(new OfflineSqliteTable(this))
+    , m_accountsModel(new OfflineSqliteTable(this))
+    , m_categoriesModel(new OfflineSqliteTable(this))
+    , m_currenciesModel(new OfflineSqliteTable(this))
+    , m_movementTypesModel(new OfflineSqliteTable(this))
+    , m_accountTypesModel(new OfflineSqliteTable(this))
+    , m_familyModel(new OfflineSqliteTable(this))
     , m_dirty(false)
     , m_baseCurrency(QStringLiteral("GBP"))
 {
@@ -42,7 +42,7 @@ MainObject::MainObject(QObject *parent)
     m_movementTypesModel->setTable(QStringLiteral("MovementTypes"));
     m_accountTypesModel->setTable(QStringLiteral("AccountTypes"));
     m_familyModel->setTable(QStringLiteral("Family"));
-    for (OfflineSqlTable *model :
+    for (OfflineSqliteTable *model :
          {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_accountTypesModel, m_familyModel, m_movementTypesModel})
         connect(model, &QAbstractItemModel::dataChanged, this, std::bind(&MainObject::setDirty, this, true));
 }
@@ -477,12 +477,12 @@ bool MainObject::setBaseCurrency(const QString &crncy)
 
 void MainObject::setTransactionsFilter(const QList<TransactionModelColumn> &col, const QStringList &filter)
 {
-    Q_ASSERT(col.size()==filter.size());
+    Q_ASSERT(col.size() == filter.size());
     QString filterString;
-    for(int i=0,maxI=col.size();i<maxI;++i){
-        if(i>0)
+    for (int i = 0, maxI = col.size(); i < maxI; ++i) {
+        if (i > 0)
             filterString += QStringLiteral(" AND ");
-        filterString += m_transactionsModel->headerData(col.at(i),Qt::Horizontal).toString() + filter.at(i);
+        filterString += m_transactionsModel->fieldName(col.at(i)) + filter.at(i);
     }
     m_transactionsModel->setFilter(filterString);
 }
@@ -497,7 +497,7 @@ void MainObject::setDirty(bool dirty)
 
 void MainObject::reselectModels()
 {
-    for (OfflineSqlTable *model :
+    for (OfflineSqliteTable *model :
          {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_movementTypesModel, m_accountTypesModel, m_familyModel})
         model->setTable(model->tableName());
 }
