@@ -41,10 +41,10 @@ CREATE TABLE Transactions (
     Amount REAL NOT NULL,
     PaymentType TEXT,
     Description TEXT,
-    Category INT,
-    Subcategory INT,
-    MovementType INT,
-    DestinationAccount INT,
+    Category INTEGER,
+    Subcategory INTEGER,
+    MovementType INTEGER,
+    DestinationAccount INTEGER,
     ExchangeRate REAL,
     FOREIGN KEY (Currency) REFERENCES Currencies (Id),
     FOREIGN KEY (Account) REFERENCES Accounts (Id),
@@ -68,7 +68,7 @@ INSERT INTO ExchangeRates (FromCurrency, ToCurrency, ExchangeRate) VALUES
     ('CHF','USD',1.0),
     ('CHF','GBP',1.0)
 ;
-INSERT INTO AccountTypes (Id, Name) VALUES (1,'Current Account'),(2,'Saving'),(3,'Debt');
+INSERT INTO AccountTypes (Id, Name) VALUES (1,'Current Account'),(2,'Credit Card'),(3,'Expense Account'),(4,'Saving/Investment'),(5,'Debt');
 INSERT INTO MovementTypes (Id, Name) VALUES (1,'Income'),(2,'Expense'),(3,'Refund'),(4,'Deposit'),(5,'Repayment'),(6,'Withdrawal');
 INSERT INTO Categories (Id, Name) VALUES
     (0,'Internal Transfer'),
@@ -153,9 +153,9 @@ INSERT INTO Subcategories (Id, Category, Name, NeedWantSave) VALUES
     (56,9,'Train',2),
     (57,18,'Investment',0),
     (58,19,'Debt',0),
-    (59,20,'Fuel',0),
-    (60,20,'Insurance',0),
-    (61,20,'Repair',0),
-    (62,20,'Tax',0)
+    (59,20,'Fuel',1),
+    (60,20,'Insurance',1),
+    (61,20,'Repair',1),
+    (62,20,'Tax',1)
 ;
 COMMIT;

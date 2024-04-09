@@ -22,13 +22,17 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QStandardPaths>
+
+
+
 TransactionsTab::TransactionsTab(QWidget *parent)
     : QWidget(parent)
     , m_object(nullptr)
-    , m_filterProxy(new AndFilterProxy(this))
+    , m_filterProxy(new OrFilterProxy(this))
     , m_currencyDelegate(new RelationalDelegate(this))
     , m_accountDelegate(new RelationalDelegate(this))
     , m_categoryDelegate(new RelationalDelegate(this))
+    , m_subcategoryDelegate(new FilteredRelationalDelegate(this))
     , m_movementTypeDelegate(new RelationalDelegate(this))
     , m_amountDelegate(new DecimalDelegate(this))
     , m_opDateDelegate(new IsoDateDelegate(this))
@@ -55,6 +59,13 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     connect(ui->accountFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onFilterChanged);
     connect(ui->fromDateEdit, &QDateEdit::dateChanged, this, &TransactionsTab::onFilterChanged);
     connect(ui->toDateEdit, &QDateEdit::dateChanged, this, &TransactionsTab::onFilterChanged);
+    connect(ui->descriptionFilterEdit, &QLineEdit::textChanged, this, &TransactionsTab::onFilterChanged);
+    connect(ui->paymentTypeFilterEdit, &QLineEdit::textChanged, this, &TransactionsTab::onFilterChanged);
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+    connect(ui->showUncategorisedCheck, &QCheckBox::stateChanged, this, &TransactionsTab::onShowWIPChanged);
+#else
+    connect(ui->showUncategorisedCheck, &QCheckBox::checkStateChanged, this, &TransactionsTab::onShowWIPChanged);
+#endif
     connect(ui->transactionView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             [this]() { ui->removeTransactionButton->setEnabled(!ui->transactionView->selectionModel()->selectedIndexes().isEmpty()); });
 }
@@ -77,6 +88,7 @@ void TransactionsTab::setMainObject(MainObject *mainObj)
             ui->transactionView->setItemDelegateForColumn(MainObject::tcAccount, m_accountDelegate);
             ui->transactionView->setItemDelegateForColumn(MainObject::tcDestinationAccount, m_accountDelegate);
             ui->transactionView->setItemDelegateForColumn(MainObject::tcCategory, m_categoryDelegate);
+            ui->transactionView->setItemDelegateForColumn(MainObject::tcSubcategory, m_subcategoryDelegate);
             ui->transactionView->setItemDelegateForColumn(MainObject::tcMovementType, m_movementTypeDelegate);
             ui->transactionView->setItemDelegateForColumn(MainObject::tcAmount, m_amountDelegate);
             ui->transactionView->setItemDelegateForColumn(MainObject::tcOpDate, m_opDateDelegate);
@@ -92,7 +104,22 @@ void TransactionsTab::setMainObject(MainObject *mainObj)
     m_currencyDelegate->setRelationModel(m_object ? m_object->currenciesModel() : nullptr, MainObject::ccId, MainObject::ccCurrency);
     m_accountDelegate->setRelationModel(m_object ? m_object->accountsModel() : nullptr, MainObject::acId, MainObject::acName);
     m_categoryDelegate->setRelationModel(m_object ? m_object->categoriesModel() : nullptr, MainObject::cacId, MainObject::cacName);
+    m_subcategoryDelegate->setRelationModel(m_object ? m_object->subcategoriesModel() : nullptr, MainObject::sccId, MainObject::sccName);
+    m_subcategoryDelegate->setRelationFilterColumn(MainObject::sccCategoryId);
+    m_subcategoryDelegate->setFilterKeyColumn(MainObject::tcCategory);
     m_movementTypeDelegate->setRelationModel(m_object ? m_object->movementTypesModel() : nullptr, MainObject::mtcId, MainObject::mtcName);
+}
+
+void TransactionsTab::onShowWIPChanged()
+{
+    if (ui->showUncategorisedCheck->checkState() == Qt::Checked) {
+        m_filterProxy->setNegativeRegExpFilter(MainObject::tcCategory, QStringLiteral(".+"));
+        m_filterProxy->setNegativeRegExpFilter(MainObject::tcSubcategory, QStringLiteral(".+"));
+        m_filterProxy->setNegativeRegExpFilter(MainObject::tcMovementType, QStringLiteral(".+"));
+    } else {
+        for (int col : {MainObject::tcCategory, MainObject::tcSubcategory, MainObject::tcMovementType})
+            m_filterProxy->removeFilterFromColumn(col);
+    }
 }
 
 void TransactionsTab::importStatement(MainObject::ImportFormats format)
@@ -164,6 +191,14 @@ void TransactionsTab::onFilterChanged()
     if (ui->toDateEdit->date() != ui->toDateEdit->minimumDate()) {
         cols.append(MainObject::tcOpDate);
         filters.append(QLatin1String("<='") + ui->toDateEdit->date().toString(Qt::ISODate) + QLatin1Char('\''));
+    }
+    if (!ui->descriptionFilterEdit->text().isEmpty()) {
+        cols.append(MainObject::tcDescription);
+        filters.append(QLatin1String(" LIKE '%") + ui->descriptionFilterEdit->text() + QLatin1String("%'")); // TODO: escape identifier
+    }
+    if (!ui->paymentTypeFilterEdit->text().isEmpty()) {
+        cols.append(MainObject::tcPaymentType);
+        filters.append(QLatin1String(" LIKE '%") + ui->paymentTypeFilterEdit->text() + QLatin1String("%'")); // TODO: escape identifier
     }
     m_object->setTransactionsFilter(cols, filters);
 }

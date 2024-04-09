@@ -17,6 +17,30 @@
 #include <QVector>
 #include <QVariant>
 #include <QSqlQuery>
+
+struct FiledInfo
+{
+    FiledInfo()
+        : fieldType(QMetaType::UnknownType)
+        , allowNull(false)
+        , isPrimaryKey(false)
+    { }
+    FiledInfo(const QString &fName, QMetaType::Type fTyp, bool canNull, bool pk)
+        : fieldName(fName)
+        , fieldType(fTyp)
+        , allowNull(canNull)
+        , isPrimaryKey(pk)
+    { }
+    FiledInfo(const FiledInfo &) = default;
+    FiledInfo(FiledInfo &&) = default;
+    FiledInfo &operator=(const FiledInfo &) = default;
+    FiledInfo &operator=(FiledInfo &&) = default;
+    QString fieldName;
+    QMetaType::Type fieldType;
+    bool allowNull;
+    bool isPrimaryKey;
+};
+
 class OfflineSqliteTable : public QAbstractTableModel
 {
     Q_OBJECT
@@ -36,6 +60,14 @@ public:
     bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role = Qt::EditRole) override;
     virtual QString fieldName(int index) const;
     virtual bool select();
+    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
+    bool moveColumns(const QModelIndex &sourceParent, int sourceColumn, int count, const QModelIndex &destinationParent,
+                     int destinationChild) override;
+    bool insertColumns(int column, int count, const QModelIndex &parent = QModelIndex()) override;
+    bool removeColumns(int column, int count, const QModelIndex &parent = QModelIndex()) override;
+    bool moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent, int destinationChild) override;
+    bool insertRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
+    bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
 
 protected:
     virtual bool getTableStructure();
@@ -44,16 +76,20 @@ protected:
     virtual bool setInternalData(const QModelIndex &index, const QVariant &value);
 
 private:
+    QMetaType::Type convertSqliteType(const QString &typ) const;
+    bool hasPrimaryKey() const;
     QSqlQuery createQuery() const;
     QString m_tableName;
     QString m_filter;
     QSqlQuery m_query;
     QVariantList m_data;
     QVariantList m_headers;
-    QStringList m_fields;
+    QList<FiledInfo> m_fields;
     int m_colCount;
     int m_rowCount;
     bool m_needTableInfo;
+    int m_sortColumn;
+    Qt::SortOrder m_sortOrder;
 };
 
 #endif

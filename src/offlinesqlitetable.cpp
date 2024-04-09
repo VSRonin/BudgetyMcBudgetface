@@ -22,47 +22,127 @@ OfflineSqliteTable::OfflineSqliteTable(QObject *parent)
     , m_colCount(0)
     , m_rowCount(0)
     , m_needTableInfo(true)
+    , m_sortColumn(-1)
+    , m_sortOrder(Qt::AscendingOrder)
 { }
+
+bool OfflineSqliteTable::removeRows(int row, int count, const QModelIndex &parent)
+{
+    if (parent.isValid() || row < 0 || row + count - 1 >= m_rowCount)
+        return false;
+    const bool hasPk = hasPrimaryKey();
+    QSqlDatabase db = openDb();
+    if (!db.isValid() || !db.isOpen())
+        return false;
+    QString removeQueryString =
+            QLatin1String("DELETE FROM ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName) + QLatin1String(" WHERE ");
+    const int colCount = m_colCount;
+    bool firstRow = true;
+    for (int h = 0; h < count; ++h) {
+        if (!firstRow)
+            removeQueryString += QLatin1String(" OR ");
+        firstRow = false;
+        bool firstField = true;
+        removeQueryString += QLatin1Char('(');
+        for (int i = 0; i < colCount; ++i) {
+            if (hasPk && !m_fields.at(i).isPrimaryKey)
+                continue;
+            if (!firstField)
+                removeQueryString += QLatin1String("AND ");
+            firstField = false;
+            removeQueryString += db.driver()->escapeIdentifier(m_fields.at(i).fieldName, QSqlDriver::FieldName);
+            if (index(row + h, i).data().isValid())
+                removeQueryString += QLatin1String("=? ");
+            else
+                removeQueryString += QLatin1String(" IS NULL ");
+        }
+        removeQueryString += QLatin1Char(')');
+    }
+    QSqlQuery removeQuery(db);
+    removeQuery.prepare(removeQueryString);
+    for (int h = 0; h < count; ++h) {
+        for (int i = 0; i < colCount; ++i) {
+            if (hasPk && !m_fields.at(i).isPrimaryKey)
+                continue;
+            const QVariant currData = index(row + h, i).data();
+            if (currData.isValid())
+                removeQuery.addBindValue(currData);
+        }
+    }
+    if (!db.transaction()) // dry run to make sure query runs before calling beginRemoveRows
+        return false;
+    if (!removeQuery.exec()) {
+#ifdef QT_DEBUG
+        qDebug().noquote() << removeQuery.executedQuery() << removeQuery.lastError().text();
+#endif
+        return false;
+    }
+    Q_ASSUME(db.rollback());
+    beginRemoveRows(QModelIndex(), row, row + count - 1);
+    Q_ASSUME(removeQuery.exec());
+    endRemoveRows();
+    return true;
+}
 
 bool OfflineSqliteTable::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (!index.isValid())
+    if (!checkIndex(index, QAbstractItemModel::CheckIndexOption::IndexIsValid))
         return false;
     if (role != Qt::DisplayRole && role != Qt::EditRole)
         return false;
     QSqlDatabase db = openDb();
-    QString selectQueryString = QLatin1String("UPDATE ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName) + QLatin1String(" SET ")
-            + db.driver()->escapeIdentifier(fieldName(index.column()), QSqlDriver::FieldName) + QLatin1String("=");
+    if (!db.isValid() || !db.isOpen())
+        return false;
+    QString updateQueryString = QLatin1String("UPDATE ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName) + QLatin1String(" SET ")
+            + db.driver()->escapeIdentifier(m_fields.at(index.column()).fieldName, QSqlDriver::FieldName) + QLatin1String("=");
     if (value.isValid())
-        selectQueryString += QLatin1Char('?');
+        updateQueryString += QLatin1Char('?');
     else
-        selectQueryString += QLatin1String("NULL");
-    selectQueryString += QLatin1String(" WHERE ");
-    const int colCount = columnCount();
+        updateQueryString += QLatin1String("NULL");
+    updateQueryString += QLatin1String(" WHERE ");
+    const bool hasPk = hasPrimaryKey();
+    bool firstField = true;
+    const int colCount = m_colCount;
     for (int i = 0; i < colCount; ++i) {
-        if (i > 0)
-            selectQueryString += QLatin1String("AND ");
-        selectQueryString += db.driver()->escapeIdentifier(fieldName(i), QSqlDriver::FieldName);
+        if (hasPk && !m_fields.at(i).isPrimaryKey)
+            continue;
+        if (!firstField)
+            updateQueryString += QLatin1String("AND ");
+        firstField = false;
+        updateQueryString += db.driver()->escapeIdentifier(m_fields.at(i).fieldName, QSqlDriver::FieldName);
         if (data(index.sibling(index.row(), i)).isValid())
-            selectQueryString += QLatin1String("=? ");
+            updateQueryString += QLatin1String("=? ");
         else
-            selectQueryString += QLatin1String(" IS NULL ");
+            updateQueryString += QLatin1String(" IS NULL ");
     }
-    QSqlQuery selectQuery(db);
-    selectQuery.prepare(selectQueryString);
-    if (value.isValid())
-        selectQuery.addBindValue(value);
+    QSqlQuery updateQuery(db);
+    updateQuery.prepare(updateQueryString);
+    if (value.isValid()) {
+        if (value.typeId() == m_fields.at(index.column()).fieldType) {
+            updateQuery.addBindValue(value);
+        } else {
+            QVariant valueCopy = value;
+            if (!valueCopy.convert(QMetaType(m_fields.at(index.column()).fieldType)))
+                return false;
+            updateQuery.addBindValue(valueCopy);
+        }
+    } else {
+        if (!m_fields.at(index.column()).allowNull)
+            return false;
+    }
     for (int i = 0; i < colCount; ++i) {
+        if (hasPk && !m_fields.at(i).isPrimaryKey)
+            continue;
         const QVariant currData = data(index.sibling(index.row(), i));
         if (currData.isValid())
-            selectQuery.addBindValue(currData);
+            updateQuery.addBindValue(currData);
     }
-    if (selectQuery.exec()) {
+    if (updateQuery.exec()) {
         setInternalData(index, value);
         return true;
     }
 #ifdef QT_DEBUG
-    qDebug().noquote() << selectQuery.lastQuery() << selectQuery.lastError().text();
+    qDebug().noquote() << updateQuery.executedQuery() << updateQuery.lastError().text();
 #endif
     return false;
 }
@@ -92,6 +172,13 @@ QSqlQuery OfflineSqliteTable::createQuery() const
     QString queryString = QLatin1String("SELECT * FROM ") + db.driver()->escapeIdentifier(m_tableName, QSqlDriver::TableName);
     if (!m_filter.isEmpty())
         queryString += QLatin1String(" WHERE ") + m_filter;
+    if (m_sortColumn >= 0 && m_sortColumn < m_colCount) {
+        queryString += QLatin1String(" ORDER BY ") + db.driver()->escapeIdentifier(m_fields.at(m_sortColumn).fieldName, QSqlDriver::FieldName);
+        if (m_sortOrder == Qt::AscendingOrder)
+            queryString += QLatin1String(" ASC");
+        else
+            queryString += QLatin1String(" DESC");
+    }
     QSqlQuery selectQuery(db);
     selectQuery.prepare(queryString);
     return selectQuery;
@@ -110,6 +197,40 @@ void OfflineSqliteTable::setFilter(const QString &filter)
 {
     m_filter = filter;
     setQuery(createQuery());
+}
+
+void OfflineSqliteTable::sort(int column, Qt::SortOrder order)
+{
+    m_sortColumn = column;
+    m_sortOrder = order;
+    setQuery(createQuery());
+}
+
+bool OfflineSqliteTable::moveColumns(const QModelIndex &sourceParent, int sourceColumn, int count, const QModelIndex &destinationParent,
+                                     int destinationChild)
+{
+    return false;
+}
+
+bool OfflineSqliteTable::insertColumns(int column, int count, const QModelIndex &parent)
+{
+    return false;
+}
+
+bool OfflineSqliteTable::removeColumns(int column, int count, const QModelIndex &parent)
+{
+    return false;
+}
+
+bool OfflineSqliteTable::moveRows(const QModelIndex &sourceParent, int sourceRow, int count, const QModelIndex &destinationParent,
+                                  int destinationChild)
+{
+    return false;
+}
+
+bool OfflineSqliteTable::insertRows(int row, int count, const QModelIndex &parent)
+{
+    return false;
 }
 
 QVariant OfflineSqliteTable::headerData(int section, Qt::Orientation orientation, int role) const
@@ -144,9 +265,27 @@ bool OfflineSqliteTable::setInternalData(const QModelIndex &index, const QVarian
     return true;
 }
 
+QMetaType::Type OfflineSqliteTable::convertSqliteType(const QString &typ) const
+{
+    if (typ.compare(QStringLiteral("INTEGER"), Qt::CaseInsensitive) == 0 || typ.compare(QStringLiteral("INT"), Qt::CaseInsensitive) == 0)
+        return QMetaType::Int; // TODO maybe 64 bits?
+    if (typ.compare(QStringLiteral("REAL"), Qt::CaseInsensitive) == 0)
+        return QMetaType::Double;
+    if (typ.compare(QStringLiteral("TEXT"), Qt::CaseInsensitive) == 0)
+        return QMetaType::QString;
+    if (typ.compare(QStringLiteral("BLOB"), Qt::CaseInsensitive) == 0)
+        return QMetaType::QByteArray;
+    return QMetaType::UnknownType;
+}
+
+bool OfflineSqliteTable::hasPrimaryKey() const
+{
+    return std::any_of(m_fields.cbegin(), m_fields.cend(), [](const FiledInfo &a) -> bool { return a.isPrimaryKey; });
+}
+
 QString OfflineSqliteTable::fieldName(int index) const
 {
-    return m_fields.value(index, QString());
+    return m_fields.value(index, FiledInfo()).fieldName;
 }
 
 bool OfflineSqliteTable::getTableStructure()
@@ -178,7 +317,8 @@ bool OfflineSqliteTable::getTableStructure()
     for (newColCount = 0; structureQuery.next(); ++newColCount) {
         const QString currFieldName = structureQuery.value(1).toString();
         m_headers.append(currFieldName);
-        m_fields.append(currFieldName);
+        m_fields.append(FiledInfo(currFieldName, convertSqliteType(structureQuery.value(2).toString()), structureQuery.value(3).toInt() == 0,
+                                  structureQuery.value(5).toInt() > 0));
     }
     if (m_colCount == 0)
         m_colCount = newColCount;
@@ -206,7 +346,7 @@ bool OfflineSqliteTable::select()
     m_data.clear();
     if (!m_query.exec()) {
 #ifdef QT_DEBUG
-        qDebug() << m_query.lastQuery() << m_query.lastError().text();
+        qDebug() << m_query.executedQuery() << m_query.lastError().text();
 #endif
         endResetModel();
         return false;

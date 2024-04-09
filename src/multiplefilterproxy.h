@@ -43,6 +43,7 @@ private:
     void onModelReset(QAbstractItemModel *mdl);
 
 protected:
+    bool hasAnyFilter() const;
     bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override = 0;
     template<class T>
     void removeFilterFromColumn(QList<QHash<qint32, T>> &filter, qint32 col)

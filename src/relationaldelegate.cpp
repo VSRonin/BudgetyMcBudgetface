@@ -13,6 +13,7 @@
 #include "relationaldelegate.h"
 #include <QAbstractItemModel>
 #include <QComboBox>
+#include <QSortFilterProxyModel>
 RelationalDelegate::RelationalDelegate(QObject *parent)
     : QStyledItemDelegate(parent)
     , m_relationModel(nullptr)
@@ -72,4 +73,94 @@ void RelationalDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
     QComboBox *result = qobject_cast<QComboBox *>(editor);
     Q_ASSERT(result);
     model->setData(index, m_relationModel->index(result->currentIndex(), m_keyCol).data(m_keyRole));
+}
+
+FilteredRelationalDelegate::FilteredRelationalDelegate(QObject *parent)
+    :RelationalDelegate(parent)
+    , m_filterKeyColumn(-1)
+    ,m_filterKeyRole(Qt::DisplayRole)
+    , m_relationFilterColumn(-1)
+    ,m_relationFilterRole(Qt::DisplayRole)
+    ,m_relationFilterProxy(new QSortFilterProxyModel(this))
+{}
+void FilteredRelationalDelegate::setRelationModel(QAbstractItemModel *model, int keyCol, int relationCol, int keyRole, int relationRole)
+{
+    RelationalDelegate::setRelationModel(model,  keyCol,  relationCol,  keyRole,  relationRole);
+    m_relationFilterProxy->setSourceModel(model);
+}
+
+QWidget *FilteredRelationalDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+
+    QWidget *result = RelationalDelegate::createEditor(parent, option, index);
+    if(m_filterKeyColumn<0||m_relationFilterColumn<0)
+        return result;
+    QComboBox *resultCombo = qobject_cast<QComboBox*>(result);
+    if(!resultCombo)
+        return result;
+    resultCombo->setModel(m_relationFilterProxy);
+    // TODO handle m_relationRole
+    return resultCombo;
+}
+
+void FilteredRelationalDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const{
+    if(m_filterKeyColumn>=0||m_relationFilterColumn>=0){
+        m_relationFilterProxy->setFilterKeyColumn(m_relationFilterColumn);
+        m_relationFilterProxy->setFilterRole(m_relationFilterRole);
+        m_relationFilterProxy->setFilterRegularExpression(QLatin1Char('^')+index.sibling(index.row(),m_filterKeyColumn).data(m_filterKeyRole).toString()+QLatin1Char('$'));
+    }
+    RelationalDelegate::setEditorData(editor,index);
+}
+
+void FilteredRelationalDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
+{
+    if (!m_relationModel || m_keyCol == m_relationCol)
+        return QStyledItemDelegate::setModelData(editor, model, index);
+    if(m_filterKeyColumn<0||m_relationFilterColumn<0)
+        return RelationalDelegate::setModelData(editor, model, index);
+    QComboBox *result = qobject_cast<QComboBox *>(editor);
+    Q_ASSERT(result);
+    model->setData(index, m_relationFilterProxy->index(result->currentIndex(), m_keyCol).data(m_keyRole));
+}
+
+int FilteredRelationalDelegate::relationFilterColumn() const
+{
+    return m_relationFilterColumn;
+}
+
+void FilteredRelationalDelegate::setRelationFilterColumn(int col)
+{
+    m_relationFilterColumn = col;
+    m_relationFilterProxy->setFilterKeyColumn(m_relationFilterColumn);
+}
+
+int FilteredRelationalDelegate::filterKeyColumn() const
+{
+    return m_filterKeyColumn;
+}
+
+void FilteredRelationalDelegate::setFilterKeyColumn(int col)
+{
+    m_filterKeyColumn = col;
+}
+
+int FilteredRelationalDelegate::filterKeyRole() const
+{
+    return m_filterKeyRole;
+}
+
+void FilteredRelationalDelegate::setFilterKeyRole(int role)
+{
+    m_filterKeyRole = role;
+}
+
+int FilteredRelationalDelegate::relationFilterRole() const
+{
+    return m_relationFilterRole;
+}
+
+void FilteredRelationalDelegate::setRelationFilterRole(int role)
+{
+    m_relationFilterRole = role;
+    m_relationFilterProxy->setFilterRole(m_relationFilterRole);
 }

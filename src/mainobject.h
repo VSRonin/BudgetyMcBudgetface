@@ -44,6 +44,7 @@ public:
     enum FamilyModelColumn { fcId, fcName, fcBirthday, fcIncome, fcIncomeCurrency };
     enum MovementTypeModelColumn { mtcId, mtcName };
     enum CategoriesModelColumn { cacId, cacName };
+    enum SubcategoriesModelColumn { sccId, sccCategoryId, sccName, sccNeedWant };
     explicit MainObject(QObject *parent = nullptr);
     ~MainObject();
     bool createBlankBudget();
@@ -54,6 +55,7 @@ public:
     QAbstractItemModel *movementTypesModel() const;
     QAbstractItemModel *accountTypesModel() const;
     QAbstractItemModel *familyModel() const;
+    QAbstractItemModel *subcategoriesModel() const;
     bool addFamilyMember(const QString &name, const QDate &birthday, double income, int incomeCurr);
     bool removeFamilyMembers(const QList<int> &ids);
     bool addAccount(const QString &name, const QString &owner, int curr, int typ);
@@ -77,19 +79,22 @@ signals:
     void dirtyChanged(bool dirty);
     void lastUpdateChanged();
     void baseCurrencyChanged();
+    void addTransactionSkippedDuplicates(int count);
 
 private:
     bool addTransactions(int account, const QList<QDate> &opDt, const QList<int> &curr, const QList<double> &amount, const QList<QString> &payType,
                          const QList<QString> &desc, const QList<int> &categ, const QList<int> &subcateg, const QList<int> &movementType,
-                         const QList<int> &destination, const QList<double> &exchangeRate);
+                         const QList<int> &destination, const QList<double> &exchangeRate, bool checkDuplicates);
     int idForCurrency(const QString &curr) const;
     int idForMovementType(const QString &mov) const;
     void setDirty(bool dirty);
     void reselectModels();
     bool removeAccounts(const QList<int> &ids, bool transaction);
+    void onTransactionCategoryChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
     OfflineSqliteTable *m_transactionsModel;
     OfflineSqliteTable *m_accountsModel;
     OfflineSqliteTable *m_categoriesModel;
+    OfflineSqliteTable *m_subcategoriesModel;
     OfflineSqliteTable *m_currenciesModel;
     OfflineSqliteTable *m_movementTypesModel;
     OfflineSqliteTable *m_accountTypesModel;

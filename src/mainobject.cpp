@@ -19,6 +19,7 @@
 #include <QSaveFile>
 #include <QFile>
 #include <QMap>
+#include <QQueue>
 #include <QRegularExpression>
 #ifdef QT_DEBUG
 #    include <QSqlError>
@@ -28,6 +29,7 @@ MainObject::MainObject(QObject *parent)
     , m_transactionsModel(new OfflineSqliteTable(this))
     , m_accountsModel(new OfflineSqliteTable(this))
     , m_categoriesModel(new OfflineSqliteTable(this))
+    , m_subcategoriesModel(new OfflineSqliteTable(this))
     , m_currenciesModel(new OfflineSqliteTable(this))
     , m_movementTypesModel(new OfflineSqliteTable(this))
     , m_accountTypesModel(new OfflineSqliteTable(this))
@@ -36,14 +38,21 @@ MainObject::MainObject(QObject *parent)
     , m_baseCurrency(QStringLiteral("GBP"))
 {
     m_transactionsModel->setTable(QStringLiteral("Transactions"));
+    m_transactionsModel->sort(tcOpDate,Qt::DescendingOrder);
     m_accountsModel->setTable(QStringLiteral("Accounts"));
+    m_accountsModel->sort(acName);
     m_categoriesModel->setTable(QStringLiteral("Categories"));
+    m_categoriesModel->sort(cacName);
+    m_subcategoriesModel->setTable(QStringLiteral("Subcategories"));
+    m_subcategoriesModel->sort(sccName);
     m_currenciesModel->setTable(QStringLiteral("Currencies"));
     m_movementTypesModel->setTable(QStringLiteral("MovementTypes"));
     m_accountTypesModel->setTable(QStringLiteral("AccountTypes"));
     m_familyModel->setTable(QStringLiteral("Family"));
+    m_familyModel->sort(fcName);
+    connect(m_transactionsModel,&QAbstractItemModel::dataChanged,this,&MainObject::onTransactionCategoryChanged);
     for (OfflineSqliteTable *model :
-         {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_accountTypesModel, m_familyModel, m_movementTypesModel})
+         {m_transactionsModel, m_accountsModel, m_categoriesModel,m_subcategoriesModel, m_currenciesModel, m_accountTypesModel, m_familyModel, m_movementTypesModel})
         connect(model, &QAbstractItemModel::dataChanged, this, std::bind(&MainObject::setDirty, this, true));
 }
 
@@ -78,6 +87,8 @@ QAbstractItemModel *MainObject::familyModel() const
 {
     return m_familyModel;
 }
+
+QAbstractItemModel *MainObject::subcategoriesModel() const{return m_subcategoriesModel;}
 
 QAbstractItemModel *MainObject::movementTypesModel() const
 {
@@ -274,6 +285,13 @@ bool MainObject::removeAccounts(const QList<int> &ids, bool transaction)
     return true;
 }
 
+void MainObject::onTransactionCategoryChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+{
+    if(topLeft.column()>tcCategory || bottomRight.column()<tcCategory)
+        return;
+    aaaa //TODO
+}
+
 bool MainObject::removeTransactions(const QList<int> &ids)
 {
     if (ids.isEmpty())
@@ -435,7 +453,7 @@ bool MainObject::importBarclaysStatement(int account, QFile *source)
         }
     }
     return addTransactions(account, opDates, {gbpID}, amounts, payTypes, descriptions, QList<int>(), QList<int>(), movTypes, QList<int>(),
-                           QList<double>());
+                           QList<double>(),true);
 }
 
 QDate MainObject::lastTransactionDate() const
@@ -498,13 +516,13 @@ void MainObject::setDirty(bool dirty)
 void MainObject::reselectModels()
 {
     for (OfflineSqliteTable *model :
-         {m_transactionsModel, m_accountsModel, m_categoriesModel, m_currenciesModel, m_movementTypesModel, m_accountTypesModel, m_familyModel})
+         {m_transactionsModel, m_accountsModel, m_categoriesModel, m_subcategoriesModel,m_currenciesModel, m_movementTypesModel, m_accountTypesModel, m_familyModel})
         model->setTable(model->tableName());
 }
 
 bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QList<int> &curr, const QList<double> &amount,
                                  const QList<QString> &payType, const QList<QString> &desc, const QList<int> &categ, const QList<int> &subcateg,
-                                 const QList<int> &movementType, const QList<int> &destination, const QList<double> &exchangeRate)
+                                 const QList<int> &movementType, const QList<int> &destination, const QList<double> &exchangeRate, bool checkDuplicates)
 {
 
     QSqlDatabase db = openDb();
@@ -545,7 +563,39 @@ bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QL
     if (maxI > 1 && exchangeRate.size() > 1 && exchangeRate.size() != maxI)
         return false;
     maxI = std::max(maxI, exchangeRate.size());
+    QQueue<int> iToSkip;
+    if(checkDuplicates){
+        for (decltype(maxI) i = 0; i < maxI; ++i){
+            QSqlQuery duplicateQuery(db);
+            duplicateQuery.prepare(
+                        QStringLiteral("SELECT Id FROM Transactions WHERE Account=? AND OperationDate=? AND Currency=? AND Amount=? AND PaymentType=? AND Description=?"));
+            duplicateQuery.addBindValue(account);
+            duplicateQuery.addBindValue((opDt.size() > 1 ? opDt.at(i) : opDt.first()).toString(Qt::ISODate));
+            duplicateQuery.addBindValue(curr.size() > 1 ? curr.at(i) : curr.first());
+            duplicateQuery.addBindValue(amount.size() > 1 ? amount.at(i) : amount.first());
+            if (payType.isEmpty())
+                duplicateQuery.addBindValue(QVariant(QMetaType::fromType<QString>()));
+            else
+                duplicateQuery.addBindValue(payType.size() > 1 ? payType.at(i) : payType.first());
+            if (desc.isEmpty())
+                duplicateQuery.addBindValue(QVariant(QMetaType::fromType<QString>()));
+            else
+                duplicateQuery.addBindValue(desc.size() > 1 ? desc.at(i) : desc.first());
+            if(!duplicateQuery.exec())
+                Q_ASSUME(db.rollback());
+                return false;
+            if(duplicateQuery.next())
+                iToSkip.enqueue(i);
+        }
+    }
+    const int duplicateSkipped = iToSkip.size();
     for (decltype(maxI) i = 0; i < maxI; ++i) {
+        if(!iToSkip.isEmpty()){
+            if(iToSkip.head()==i){
+                iToSkip.dequeue();
+                continue;
+            }
+        }
         QSqlQuery addTransactionQuery(db);
         addTransactionQuery.prepare(
                 QStringLiteral("INSERT INTO Transactions (Id, Account, OperationDate, Currency, Amount, PaymentType, Description, Category, "
@@ -594,6 +644,8 @@ bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QL
     if (!db.commit())
         return false;
     m_transactionsModel->select();
+    if(duplicateSkipped>0)
+        Q_EMIT addTransactionSkippedDuplicates(duplicateSkipped);
     setDirty(true);
     return true;
 }
