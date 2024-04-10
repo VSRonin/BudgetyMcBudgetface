@@ -23,8 +23,6 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 
-
-
 TransactionsTab::TransactionsTab(QWidget *parent)
     : QWidget(parent)
     , m_object(nullptr)

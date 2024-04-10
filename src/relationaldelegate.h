@@ -22,7 +22,8 @@ class RelationalDelegate : public QStyledItemDelegate
     Q_DISABLE_COPY_MOVE(RelationalDelegate)
 public:
     RelationalDelegate(QObject *parent = nullptr);
-    virtual void setRelationModel(QAbstractItemModel *model, int keyCol, int relationCol, int keyRole = Qt::DisplayRole, int relationRole = Qt::DisplayRole);
+    virtual void setRelationModel(QAbstractItemModel *model, int keyCol, int relationCol, int keyRole = Qt::DisplayRole,
+                                  int relationRole = Qt::DisplayRole);
     QString displayText(const QVariant &value, const QLocale &locale) const override;
     QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
     void setEditorData(QWidget *editor, const QModelIndex &index) const override;
@@ -36,11 +37,13 @@ protected:
     int m_relationRole;
 };
 
-class FilteredRelationalDelegate : public RelationalDelegate{
+class FilteredRelationalDelegate : public RelationalDelegate
+{
     Q_DISABLE_COPY_MOVE(FilteredRelationalDelegate)
 public:
-    explicit FilteredRelationalDelegate(QObject* parent = nullptr);
-    void setRelationModel(QAbstractItemModel *model, int keyCol, int relationCol, int keyRole = Qt::DisplayRole, int relationRole = Qt::DisplayRole) override;
+    explicit FilteredRelationalDelegate(QObject *parent = nullptr);
+    void setRelationModel(QAbstractItemModel *model, int keyCol, int relationCol, int keyRole = Qt::DisplayRole,
+                          int relationRole = Qt::DisplayRole) override;
     void setEditorData(QWidget *editor, const QModelIndex &index) const override;
     void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
     QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
@@ -58,7 +61,7 @@ private:
     int m_filterKeyRole;
     int m_relationFilterColumn;
     int m_relationFilterRole;
-    QSortFilterProxyModel* m_relationFilterProxy;
+    QSortFilterProxyModel *m_relationFilterProxy;
 };
 
 #endif // RELATIONALDELEGATE_H

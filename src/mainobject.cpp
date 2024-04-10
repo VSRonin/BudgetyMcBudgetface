@@ -24,9 +24,24 @@
 #ifdef QT_DEBUG
 #    include <QSqlError>
 #endif
+
+class TransactionModel : public OfflineSqliteTable
+{
+    Q_DISABLE_COPY_MOVE(TransactionModel)
+public:
+    explicit TransactionModel(QObject *parent = nullptr);
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    int baseCurrency() const;
+    void setBaseCurrency(int newBaseCurrency);
+
+private:
+    int m_baseCurrency;
+    void onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+};
+
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
-    , m_transactionsModel(new OfflineSqliteTable(this))
+    , m_transactionsModel(new TransactionModel(this))
     , m_accountsModel(new OfflineSqliteTable(this))
     , m_categoriesModel(new OfflineSqliteTable(this))
     , m_subcategoriesModel(new OfflineSqliteTable(this))
@@ -35,10 +50,10 @@ MainObject::MainObject(QObject *parent)
     , m_accountTypesModel(new OfflineSqliteTable(this))
     , m_familyModel(new OfflineSqliteTable(this))
     , m_dirty(false)
-    , m_baseCurrency(QStringLiteral("GBP"))
+    , m_baseCurrency(1)
 {
     m_transactionsModel->setTable(QStringLiteral("Transactions"));
-    m_transactionsModel->sort(tcOpDate,Qt::DescendingOrder);
+    m_transactionsModel->sort(tcOpDate, Qt::DescendingOrder);
     m_accountsModel->setTable(QStringLiteral("Accounts"));
     m_accountsModel->sort(acName);
     m_categoriesModel->setTable(QStringLiteral("Categories"));
@@ -50,9 +65,10 @@ MainObject::MainObject(QObject *parent)
     m_accountTypesModel->setTable(QStringLiteral("AccountTypes"));
     m_familyModel->setTable(QStringLiteral("Family"));
     m_familyModel->sort(fcName);
-    connect(m_transactionsModel,&QAbstractItemModel::dataChanged,this,&MainObject::onTransactionCategoryChanged);
-    for (OfflineSqliteTable *model :
-         {m_transactionsModel, m_accountsModel, m_categoriesModel,m_subcategoriesModel, m_currenciesModel, m_accountTypesModel, m_familyModel, m_movementTypesModel})
+    connect(m_transactionsModel, &QAbstractItemModel::dataChanged, this, &MainObject::onTransactionCategoryChanged);
+    connect(m_transactionsModel, &QAbstractItemModel::dataChanged, this, &MainObject::onTransactionCurrencyChanged);
+    for (OfflineSqliteTable *model : {static_cast<OfflineSqliteTable *>(m_transactionsModel), m_accountsModel, m_categoriesModel,
+                                      m_subcategoriesModel, m_currenciesModel, m_accountTypesModel, m_familyModel, m_movementTypesModel})
         connect(model, &QAbstractItemModel::dataChanged, this, std::bind(&MainObject::setDirty, this, true));
 }
 
@@ -88,7 +104,10 @@ QAbstractItemModel *MainObject::familyModel() const
     return m_familyModel;
 }
 
-QAbstractItemModel *MainObject::subcategoriesModel() const{return m_subcategoriesModel;}
+QAbstractItemModel *MainObject::subcategoriesModel() const
+{
+    return m_subcategoriesModel;
+}
 
 QAbstractItemModel *MainObject::movementTypesModel() const
 {
@@ -287,9 +306,56 @@ bool MainObject::removeAccounts(const QList<int> &ids, bool transaction)
 
 void MainObject::onTransactionCategoryChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
 {
-    if(topLeft.column()>tcCategory || bottomRight.column()<tcCategory)
+    if (topLeft.column() > tcCategory || bottomRight.column() < tcCategory)
         return;
-    aaaa //TODO
+    for (int i = topLeft.row(); i <= bottomRight.row(); ++i) {
+        const QVariant catData = topLeft.sibling(i, tcCategory).data();
+        if (!catData.isValid() || !isInternalTransferCategory(catData.toInt())) {
+            if (topLeft.sibling(i, tcDestinationAccount).data().isValid())
+                m_transactionsModel->setData(topLeft.sibling(i, tcDestinationAccount), QVariant());
+        } else if (isInternalTransferCategory(catData.toInt())) {
+            m_transactionsModel->setData(topLeft.sibling(i, tcMovementType),
+                                         movementTypeForInternalTransfer(catData.toInt(), topLeft.sibling(i, tcAmount).data().toDouble()));
+        }
+        const int forcedSub = forcedSubcategory(catData.toInt());
+        if (forcedSub >= 0)
+            m_transactionsModel->setData(topLeft.sibling(i, tcSubcategory), forcedSub);
+        else if (topLeft.sibling(i, tcSubcategory).data().isValid()
+                 && (!catData.isValid() || !validSubcategory(catData.toInt(), topLeft.sibling(i, tcSubcategory).data().toInt())))
+            m_transactionsModel->setData(topLeft.sibling(i, tcSubcategory), QVariant());
+    }
+}
+
+double MainObject::getExchangeRate(int fromCurrencyID, int toCurrencyID, double defaultVal) const{
+    QSqlDatabase db = openDb();
+    if (db.isOpen()) {
+        QSqlQuery getExchangeRateQuery(db);
+        getExchangeRateQuery.prepare(
+                QStringLiteral("SELECT Intermediate.ExchangeRate, Intermediate.FromCurrencyID, Currencies.Id as ToCurrencyID FROM (SELECT "
+                               "Currencies.Id as FromCurrencyID, ExchangeRates.ToCurrency, ExchangeRates.ExchangeRate from ExchangeRates LEFT "
+                               "JOIN Currencies ON Currencies.Currency=ExchangeRates.FromCurrency) as Intermediate LEFT JOIN Currencies ON "
+                               "Currencies.Currency=Intermediate.ToCurrency WHERE FromCurrencyID =? AND ToCurrencyID=?"));
+        getExchangeRateQuery.addBindValue(fromCurrencyID);
+        getExchangeRateQuery.addBindValue(toCurrencyID);
+        if (getExchangeRateQuery.exec()) {
+            if (getExchangeRateQuery.next())
+                return getExchangeRateQuery.value(0).toDouble();
+        }
+    }
+    return defaultVal;
+}
+
+void MainObject::onTransactionCurrencyChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+{
+    if (topLeft.column() > tcCurrency || bottomRight.column() < tcCurrency)
+        return;
+    for (int i = topLeft.row(); i <= bottomRight.row(); ++i) {
+        const QVariant curData = topLeft.sibling(i, tcCurrency).data();
+        if (curData.toInt() == m_baseCurrency)
+            m_transactionsModel->setData(topLeft.sibling(i, tcExchangeRate), QVariant());
+        else
+            m_transactionsModel->setData(topLeft.sibling(i, tcExchangeRate), getExchangeRate(curData.toInt(),m_baseCurrency));
+    }
 }
 
 bool MainObject::removeTransactions(const QList<int> &ids)
@@ -453,7 +519,7 @@ bool MainObject::importBarclaysStatement(int account, QFile *source)
         }
     }
     return addTransactions(account, opDates, {gbpID}, amounts, payTypes, descriptions, QList<int>(), QList<int>(), movTypes, QList<int>(),
-                           QList<double>(),true);
+                           QList<double>(), true);
 }
 
 QDate MainObject::lastTransactionDate() const
@@ -474,23 +540,29 @@ QDate MainObject::lastTransactionDate() const
     return QDate::fromString(lastTransactionQuery.value(0).toString(), Qt::ISODate);
 }
 
-const QString &MainObject::baseCurrency() const
+int MainObject::baseCurrency() const
 {
     return m_baseCurrency;
 }
 
-bool MainObject::setBaseCurrency(const QString &crncy)
+bool MainObject::setBaseCurrency(int crncy)
 {
     if (m_baseCurrency == crncy)
         return true;
     for (int i = 0, maxI = m_currenciesModel->rowCount(); i < maxI; ++i) {
-        if (crncy == m_currenciesModel->index(i, ccCurrency).data().toString()) {
+        if (crncy == m_currenciesModel->index(i, ccId).data().toInt()) {
             m_baseCurrency = crncy;
+            m_transactionsModel->setBaseCurrency(crncy);
             baseCurrencyChanged();
             return true;
         }
     }
     return false;
+}
+
+bool MainObject::setBaseCurrency(const QString &crncy)
+{
+    return setBaseCurrency(idForCurrency(crncy));
 }
 
 void MainObject::setTransactionsFilter(const QList<TransactionModelColumn> &col, const QStringList &filter)
@@ -505,6 +577,75 @@ void MainObject::setTransactionsFilter(const QList<TransactionModelColumn> &col,
     m_transactionsModel->setFilter(filterString);
 }
 
+bool MainObject::validSubcategory(int category, int subcategory) const
+{
+    QSqlDatabase db = openDb();
+    if (db.isOpen()) {
+        QSqlQuery subcategoryQuery(db);
+        subcategoryQuery.prepare(QStringLiteral("SELECT Id from Subcategories WHERE Id=? AND Category=?"));
+        subcategoryQuery.addBindValue(subcategory);
+        subcategoryQuery.addBindValue(category);
+        if (subcategoryQuery.exec())
+            return subcategoryQuery.next();
+    }
+    // backup
+    for (int i = 0, maxI = m_subcategoriesModel->rowCount(); i < maxI; ++i) {
+        if (m_subcategoriesModel->index(i, sccCategoryId).data().toInt() == category
+            && m_subcategoriesModel->index(i, sccId).data().toInt() == subcategory)
+            return true;
+    }
+    return false;
+}
+
+constexpr bool MainObject::isInternalTransferCategory(int category)
+{
+    return category == 0 // internal transfer
+            || category == 18 // investment
+            || category == 19 // debt
+            ;
+}
+
+int MainObject::forcedSubcategory(int category) const
+{
+    int result = -1;
+    QSqlDatabase db = openDb();
+    if (db.isOpen()) {
+        QSqlQuery subcategoryQuery(db);
+        subcategoryQuery.prepare(QStringLiteral("SELECT Id from Subcategories WHERE Category=?"));
+        subcategoryQuery.addBindValue(category);
+        if (subcategoryQuery.exec()) {
+            if (subcategoryQuery.next()) {
+                result = subcategoryQuery.value(0).toInt();
+                if (subcategoryQuery.next())
+                    return -1;
+                return result;
+            }
+        }
+    }
+    // backup
+    for (int i = 0, maxI = m_subcategoriesModel->rowCount(); i < maxI; ++i) {
+        if (m_subcategoriesModel->index(i, sccCategoryId).data().toInt() == category) {
+            if (result >= 0)
+                return -1;
+            result = m_subcategoriesModel->index(i, sccId).data().toInt();
+        }
+    }
+    return result;
+}
+
+int MainObject::movementTypeForInternalTransfer(int category, double amount) const
+{
+    Q_ASSERT(isInternalTransferCategory(category));
+    if (amount > 0)
+        return 6; // Withdrawal
+    if (category == 0 || category == 18) // internal transfer
+        return 4; // Deposit
+    if (category == 19) // debt
+        return 5; // Repayment
+    Q_UNREACHABLE();
+    return 0;
+}
+
 void MainObject::setDirty(bool dirty)
 {
     if (dirty == m_dirty)
@@ -515,14 +656,15 @@ void MainObject::setDirty(bool dirty)
 
 void MainObject::reselectModels()
 {
-    for (OfflineSqliteTable *model :
-         {m_transactionsModel, m_accountsModel, m_categoriesModel, m_subcategoriesModel,m_currenciesModel, m_movementTypesModel, m_accountTypesModel, m_familyModel})
+    for (OfflineSqliteTable *model : {static_cast<OfflineSqliteTable *>(m_transactionsModel), m_accountsModel, m_categoriesModel,
+                                      m_subcategoriesModel, m_currenciesModel, m_movementTypesModel, m_accountTypesModel, m_familyModel})
         model->setTable(model->tableName());
 }
 
 bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QList<int> &curr, const QList<double> &amount,
                                  const QList<QString> &payType, const QList<QString> &desc, const QList<int> &categ, const QList<int> &subcateg,
-                                 const QList<int> &movementType, const QList<int> &destination, const QList<double> &exchangeRate, bool checkDuplicates)
+                                 const QList<int> &movementType, const QList<int> &destination, const QList<double> &exchangeRate,
+                                 bool checkDuplicates)
 {
 
     QSqlDatabase db = openDb();
@@ -564,11 +706,11 @@ bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QL
         return false;
     maxI = std::max(maxI, exchangeRate.size());
     QQueue<int> iToSkip;
-    if(checkDuplicates){
-        for (decltype(maxI) i = 0; i < maxI; ++i){
+    if (checkDuplicates) {
+        for (decltype(maxI) i = 0; i < maxI; ++i) {
             QSqlQuery duplicateQuery(db);
-            duplicateQuery.prepare(
-                        QStringLiteral("SELECT Id FROM Transactions WHERE Account=? AND OperationDate=? AND Currency=? AND Amount=? AND PaymentType=? AND Description=?"));
+            duplicateQuery.prepare(QStringLiteral("SELECT Id FROM Transactions WHERE Account=? AND OperationDate=? AND Currency=? AND Amount=? AND "
+                                                  "PaymentType=? AND Description=?"));
             duplicateQuery.addBindValue(account);
             duplicateQuery.addBindValue((opDt.size() > 1 ? opDt.at(i) : opDt.first()).toString(Qt::ISODate));
             duplicateQuery.addBindValue(curr.size() > 1 ? curr.at(i) : curr.first());
@@ -581,17 +723,21 @@ bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QL
                 duplicateQuery.addBindValue(QVariant(QMetaType::fromType<QString>()));
             else
                 duplicateQuery.addBindValue(desc.size() > 1 ? desc.at(i) : desc.first());
-            if(!duplicateQuery.exec())
+            if (!duplicateQuery.exec()) {
+#ifdef QT_DEBUG
+                qDebug() << duplicateQuery.executedQuery() << duplicateQuery.lastError().text();
+#endif
                 Q_ASSUME(db.rollback());
                 return false;
-            if(duplicateQuery.next())
+            }
+            if (duplicateQuery.next())
                 iToSkip.enqueue(i);
         }
     }
     const int duplicateSkipped = iToSkip.size();
     for (decltype(maxI) i = 0; i < maxI; ++i) {
-        if(!iToSkip.isEmpty()){
-            if(iToSkip.head()==i){
+        if (!iToSkip.isEmpty()) {
+            if (iToSkip.head() == i) {
                 iToSkip.dequeue();
                 continue;
             }
@@ -635,7 +781,7 @@ bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QL
             addTransactionQuery.addBindValue(exchangeRate.size() > 1 ? exchangeRate.at(i) : movementType.first());
         if (!addTransactionQuery.exec()) {
 #ifdef QT_DEBUG
-            qDebug() << addTransactionQuery.lastQuery() << addTransactionQuery.lastError().text();
+            qDebug() << addTransactionQuery.executedQuery() << addTransactionQuery.lastError().text();
 #endif
             Q_ASSUME(db.rollback());
             return false;
@@ -644,8 +790,62 @@ bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QL
     if (!db.commit())
         return false;
     m_transactionsModel->select();
-    if(duplicateSkipped>0)
+    if (duplicateSkipped > 0)
         Q_EMIT addTransactionSkippedDuplicates(duplicateSkipped);
     setDirty(true);
     return true;
+}
+
+TransactionModel::TransactionModel(QObject *parent)
+    : OfflineSqliteTable(parent)
+    , m_baseCurrency(1)
+{
+    connect(this, &TransactionModel::dataChanged, this, &TransactionModel::onDataChanged);
+}
+
+Qt::ItemFlags TransactionModel::flags(const QModelIndex &index) const
+{
+    switch (index.column()) {
+    case MainObject::tcSubcategory:
+        if (index.sibling(index.row(), MainObject::tcCategory).data().isValid())
+            return OfflineSqliteTable::flags(index);
+        return Qt::ItemNeverHasChildren;
+    case MainObject::tcDestinationAccount: {
+        const QVariant catData = index.sibling(index.row(), MainObject::tcCategory).data();
+        if (catData.isValid() && MainObject::isInternalTransferCategory(catData.toInt()))
+            return OfflineSqliteTable::flags(index);
+        return Qt::ItemNeverHasChildren;
+    }
+    case MainObject::tcExchangeRate:
+        if (index.sibling(index.row(), MainObject::tcCurrency).data().toInt() != m_baseCurrency)
+            return OfflineSqliteTable::flags(index);
+        return Qt::ItemNeverHasChildren;
+    default:
+        return OfflineSqliteTable::flags(index);
+    }
+}
+
+int TransactionModel::baseCurrency() const
+{
+    return m_baseCurrency;
+}
+
+void TransactionModel::setBaseCurrency(int newBaseCurrency)
+{
+    if (m_baseCurrency == newBaseCurrency)
+        return;
+    m_baseCurrency = newBaseCurrency;
+    if (rowCount() > 0 && columnCount() > 0)
+        Q_EMIT dataChanged(index(0, MainObject::tcExchangeRate), index(rowCount() - 1, MainObject::tcExchangeRate), {Qt::DisplayRole, Qt::EditRole});
+}
+
+void TransactionModel::onDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight)
+{
+    if (topLeft.column() <= MainObject::tcCurrency && bottomRight.column() >= MainObject::tcCurrency) {
+        Q_EMIT dataChanged(index(topLeft.row(), MainObject::tcExchangeRate), index(bottomRight.row(), MainObject::tcExchangeRate));
+    }
+    if (topLeft.column() <= MainObject::tcCategory && bottomRight.column() >= MainObject::tcCategory) {
+        Q_EMIT dataChanged(index(topLeft.row(), MainObject::tcDestinationAccount), index(bottomRight.row(), MainObject::tcDestinationAccount));
+        Q_EMIT dataChanged(index(topLeft.row(), MainObject::tcSubcategory), index(bottomRight.row(), MainObject::tcSubcategory));
+    }
 }

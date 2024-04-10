@@ -67,11 +67,11 @@ void MultipleFilterProxy::onModelReset(QAbstractItemModel *mdl)
 
 bool MultipleFilterProxy::hasAnyFilter() const
 {
-    return
-    std::any_of(m_dateRangeFilter.cbegin(),m_dateRangeFilter.cend(),[](const QHash<qint32, std::pair<QDate, QDate>>& filter)->bool{return !filter.isEmpty();})
- ||std::any_of(m_regExpFilter.cbegin(),m_regExpFilter.cend(),[](const QHash<qint32, std::pair<QRegularExpression, bool>>& filter)->bool{return !filter.isEmpty();})
-  ||          std::any_of(m_boolFilter.cbegin(),m_boolFilter.cend(),[](const QHash<qint32, bool>& filter)->bool{return !filter.isEmpty();})
-    ;
+    return std::any_of(m_dateRangeFilter.cbegin(), m_dateRangeFilter.cend(),
+                       [](const QHash<qint32, std::pair<QDate, QDate>> &filter) -> bool { return !filter.isEmpty(); })
+            || std::any_of(m_regExpFilter.cbegin(), m_regExpFilter.cend(),
+                           [](const QHash<qint32, std::pair<QRegularExpression, bool>> &filter) -> bool { return !filter.isEmpty(); })
+            || std::any_of(m_boolFilter.cbegin(), m_boolFilter.cend(), [](const QHash<qint32, bool> &filter) -> bool { return !filter.isEmpty(); });
 }
 
 void MultipleFilterProxy::setDateRangeFilter(qint32 col, const QDate &minDate, const QDate &maxDate, qint32 role)
@@ -207,7 +207,7 @@ bool OrFilterProxy::filterAcceptsRow(int source_row, const QModelIndex &source_p
         }
         return result;
     } else {
-        if(!hasAnyFilter())
+        if (!hasAnyFilter())
             return true;
         for (int i = 0; i < sourceModel()->columnCount(source_parent); ++i) {
             currntIndex = sourceModel()->index(source_row, i, source_parent);

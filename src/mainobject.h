@@ -18,6 +18,7 @@
 class OfflineSqliteTable;
 class QAbstractItemModel;
 class QFile;
+class TransactionModel;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -41,7 +42,7 @@ public:
     enum CurrencyModelColumn { ccId, ccCurrency };
     enum AccountTypeModelColumn { atcId, atcName };
     enum ImportFormats { ifBarclays, ifNatwest, ifRevolut };
-    enum FamilyModelColumn { fcId, fcName, fcBirthday, fcIncome, fcIncomeCurrency };
+    enum FamilyModelColumn { fcId, fcName, fcBirthday, fcIncome, fcIncomeCurrency, fcRetirementAge };
     enum MovementTypeModelColumn { mtcId, mtcName };
     enum CategoriesModelColumn { cacId, cacName };
     enum SubcategoriesModelColumn { sccId, sccCategoryId, sccName, sccNeedWant };
@@ -69,10 +70,13 @@ public:
     bool importStatement(int account, const QString &path, ImportFormats format);
     bool importBarclaysStatement(int account, QFile *source);
     QDate lastTransactionDate() const;
-    const QString &baseCurrency() const;
+    int baseCurrency() const;
     bool setBaseCurrency(const QString &crncy);
+    bool setBaseCurrency(int crncy);
     double exchangeRate(const QString &fromCrncy, const QString &toCrncy) const;
     void setTransactionsFilter(const QList<TransactionModelColumn> &col, const QStringList &filter);
+    bool validSubcategory(int category, int subcategory) const;
+    constexpr static bool isInternalTransferCategory(int category);
 public slots:
     void newBudget();
 signals:
@@ -82,6 +86,9 @@ signals:
     void addTransactionSkippedDuplicates(int count);
 
 private:
+    double getExchangeRate(int fromCurrencyID, int toCurrencyID, double defaultVal=1.0) const;
+    int forcedSubcategory(int category) const;
+    int movementTypeForInternalTransfer(int category, double amount) const;
     bool addTransactions(int account, const QList<QDate> &opDt, const QList<int> &curr, const QList<double> &amount, const QList<QString> &payType,
                          const QList<QString> &desc, const QList<int> &categ, const QList<int> &subcateg, const QList<int> &movementType,
                          const QList<int> &destination, const QList<double> &exchangeRate, bool checkDuplicates);
@@ -90,8 +97,9 @@ private:
     void setDirty(bool dirty);
     void reselectModels();
     bool removeAccounts(const QList<int> &ids, bool transaction);
-    void onTransactionCategoryChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
-    OfflineSqliteTable *m_transactionsModel;
+    void onTransactionCategoryChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    void onTransactionCurrencyChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    TransactionModel *m_transactionsModel;
     OfflineSqliteTable *m_accountsModel;
     OfflineSqliteTable *m_categoriesModel;
     OfflineSqliteTable *m_subcategoriesModel;
@@ -100,7 +108,7 @@ private:
     OfflineSqliteTable *m_accountTypesModel;
     OfflineSqliteTable *m_familyModel;
     bool m_dirty;
-    QString m_baseCurrency;
+    int m_baseCurrency;
 };
 
 #endif

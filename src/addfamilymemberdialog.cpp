@@ -43,8 +43,14 @@ void AddFamilyMemberDialog::setMainObject(MainObject *mainObj)
     m_object = mainObj;
     ui->incomeCurrencyCombo->setModel(m_object ? m_object->currenciesModel() : nullptr);
     ui->incomeCurrencyCombo->setModelColumn(MainObject::ccCurrency);
-    if (m_object)
-        ui->incomeCurrencyCombo->setCurrentIndex(ui->incomeCurrencyCombo->findText(m_object->baseCurrency()));
+    if (m_object) {
+        for (int i = 0, maxI = m_object->currenciesModel()->rowCount(); i < maxI; ++i) {
+            if (m_object->currenciesModel()->index(i, MainObject::ccId).data().toInt() == m_object->baseCurrency()) {
+                ui->incomeCurrencyCombo->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
 }
 
 QString AddFamilyMemberDialog::name() const
