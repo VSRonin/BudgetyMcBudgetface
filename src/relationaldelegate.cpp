@@ -50,6 +50,8 @@ QWidget *RelationalDelegate::createEditor(QWidget *parent, const QStyleOptionVie
     QComboBox *result = new QComboBox(parent);
     result->setModel(m_relationModel);
     result->setModelColumn(m_relationCol);
+    result->setEditable(true);
+    result->setInsertPolicy(QComboBox::NoInsert);
     // TODO handle m_relationRole
     return result;
 }

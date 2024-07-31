@@ -45,6 +45,8 @@ set(delegates_SRCS
     isodatedelegate.cpp
     ownerdelegate.h
     ownerdelegate.cpp
+    accountstatusdelegate.h
+    accountstatusdelegate.cpp
 )
 set(backend_SRCS
     backendresources.qrc

@@ -66,7 +66,7 @@ void FamilyTab::onAddFamily()
     addFamilyDialog.setMainObject(m_object);
     while (addFamilyDialog.exec()) {
         if (m_object->addFamilyMember(addFamilyDialog.name(), addFamilyDialog.birthday(), addFamilyDialog.annualIncome(),
-                                      addFamilyDialog.incomeCurrency()))
+                                      addFamilyDialog.incomeCurrency(),addFamilyDialog.retirementAge()))
             break;
         QMessageBox::critical(this, tr("Error"), tr("Failed to add a new family member, try again or check your input"));
     }

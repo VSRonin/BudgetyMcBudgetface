@@ -36,6 +36,9 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     , m_opDateDelegate(new IsoDateDelegate(this))
     , m_currencyProxy(new BlankRowProxy(this))
     , m_accountProxy(new BlankRowProxy(this))
+    , m_categoryProxy(new BlankRowProxy(this))
+    , m_subcategoryProxy(new BlankRowProxy(this))
+    , m_subcategoryFilter(new QSortFilterProxyModel(this))
     , ui(new Ui::TransactionsTab)
 
 {
@@ -44,6 +47,9 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     ui->transactionView->setModel(m_filterProxy);
     ui->currencyFilterCombo->setModel(m_currencyProxy);
     ui->accountFilterCombo->setModel(m_accountProxy);
+    ui->categoryFilterCombo->setModel(m_categoryProxy);
+    m_subcategoryProxy->setSourceModel(m_subcategoryFilter);
+    ui->subcategoryFilterCombo->setModel(m_subcategoryProxy);
     QMenu *importStatementsMenu = new QMenu(this);
     importStatementsMenu->addAction(ui->actionImport_Barclays);
     importStatementsMenu->addAction(ui->actionImport_Natwest);
@@ -54,6 +60,9 @@ TransactionsTab::TransactionsTab(QWidget *parent)
     connect(ui->actionImport_Revolut, &QAction::triggered, this, std::bind(&TransactionsTab::importStatement, this, MainObject::ifRevolut));
     connect(ui->removeTransactionButton, &QPushButton::clicked, this, &TransactionsTab::onRemoveTransactions);
     connect(ui->currencyFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onFilterChanged);
+    connect(ui->categoryFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onFilterChanged);
+    connect(ui->categoryFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onCategoryFilterChanged);
+    connect(ui->subcategoryFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onFilterChanged);
     connect(ui->accountFilterCombo, &QComboBox::currentIndexChanged, this, &TransactionsTab::onFilterChanged);
     connect(ui->fromDateEdit, &QDateEdit::dateChanged, this, &TransactionsTab::onFilterChanged);
     connect(ui->toDateEdit, &QDateEdit::dateChanged, this, &TransactionsTab::onFilterChanged);
@@ -80,6 +89,8 @@ void TransactionsTab::setMainObject(MainObject *mainObj)
         m_filterProxy->setSourceModel(m_object->transactionsModel());
         m_currencyProxy->setSourceModel(m_object->currenciesModel());
         m_accountProxy->setSourceModel(m_object->accountsModel());
+        m_categoryProxy->setSourceModel(m_object->categoriesModel());
+        m_subcategoryFilter->setSourceModel(m_object->subcategoriesModel());
         const auto setupView = [this]() {
             ui->transactionView->setColumnHidden(MainObject::tcId, true);
             ui->transactionView->setItemDelegateForColumn(MainObject::tcCurrency, m_currencyDelegate);
@@ -92,6 +103,9 @@ void TransactionsTab::setMainObject(MainObject *mainObj)
             ui->transactionView->setItemDelegateForColumn(MainObject::tcOpDate, m_opDateDelegate);
             ui->currencyFilterCombo->setModelColumn(MainObject::ccCurrency);
             ui->accountFilterCombo->setModelColumn(MainObject::acName);
+            ui->categoryFilterCombo->setModelColumn(MainObject::cacName);
+            ui->subcategoryFilterCombo->setModelColumn(MainObject::sccName);
+            m_subcategoryFilter->setFilterKeyColumn(MainObject::sccCategoryId);
             refreshLastUpdate();
         };
         connect(m_object->transactionsModel(), &QAbstractItemModel::rowsInserted, this, setupView);
@@ -182,6 +196,18 @@ void TransactionsTab::onFilterChanged()
                 QLatin1Char('=')
                 + QString::number(m_object->accountsModel()->index(ui->accountFilterCombo->currentIndex() - 1, MainObject::acId).data().toInt()));
     }
+    if (ui->categoryFilterCombo->currentIndex() > 0) {
+        cols.append(MainObject::tcCategory);
+        filters.append(
+                QLatin1Char('=')
+                + QString::number(m_object->categoriesModel()->index(ui->categoryFilterCombo->currentIndex() - 1, MainObject::cacId).data().toInt()));
+    }
+    if (ui->subcategoryFilterCombo->currentIndex() > 0) {
+        cols.append(MainObject::tcSubcategory);
+        filters.append(
+                QLatin1Char('=')
+                + QString::number(m_subcategoryFilter->index(ui->subcategoryFilterCombo->currentIndex() - 1, MainObject::sccId).data().toInt()));
+    }
     if (ui->fromDateEdit->date() != ui->fromDateEdit->minimumDate()) {
         cols.append(MainObject::tcOpDate);
         filters.append(QLatin1String(">='") + ui->fromDateEdit->date().toString(Qt::ISODate) + QLatin1Char('\''));
@@ -199,4 +225,16 @@ void TransactionsTab::onFilterChanged()
         filters.append(QLatin1String(" LIKE '%") + ui->paymentTypeFilterEdit->text() + QLatin1String("%'")); // TODO: escape identifier
     }
     m_object->setTransactionsFilter(cols, filters);
+}
+
+void TransactionsTab::onCategoryFilterChanged()
+{
+    if (ui->categoryFilterCombo->currentIndex() == 0){
+        ui->subcategoryFilterCombo->setCurrentIndex(0);
+        ui->subcategoryFilterCombo->setEnabled(false);
+    }
+    else{
+        m_subcategoryFilter->setFilterRegularExpression(QLatin1Char('^')+QString::number(m_object->categoriesModel()->index(ui->categoryFilterCombo->currentIndex() - 1, MainObject::cacId).data().toInt())+QLatin1Char('$'));
+        ui->subcategoryFilterCombo->setEnabled(true);
+    }
 }

@@ -18,6 +18,7 @@
 class IsoDateDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
+    Q_DISABLE_COPY_MOVE(IsoDateDelegate)
 public:
     explicit IsoDateDelegate(QObject *parent = nullptr);
     QString displayText(const QVariant &value, const QLocale &locale) const override;

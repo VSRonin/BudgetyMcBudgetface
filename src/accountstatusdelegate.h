@@ -10,32 +10,21 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#ifndef ADDFAMILYMEMBERDIALOG_H
-#define ADDFAMILYMEMBERDIALOG_H
+#ifndef ACCOUNTSTATUSDELEGATE_H
+#define ACCOUNTSTATUSDELEGATE_H
 
-#include <QDialog>
+#include <QStyledItemDelegate>
 
-namespace Ui {
-class AddFamilyMemberDialog;
-}
-class MainObject;
-class AddFamilyMemberDialog : public QDialog
+class AccountStatusDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
-
+    Q_DISABLE_COPY_MOVE(AccountStatusDelegate)
 public:
-    explicit AddFamilyMemberDialog(QWidget *parent = nullptr);
-    ~AddFamilyMemberDialog();
-    void setMainObject(MainObject *mainObj);
-    QString name() const;
-    QDate birthday() const;
-    double annualIncome() const;
-    int incomeCurrency() const;
-    int retirementAge() const;
-private:
-    void checkOkEnabled();
-    MainObject *m_object;
-    Ui::AddFamilyMemberDialog *ui;
+    explicit AccountStatusDelegate(QObject *parent = nullptr);
+    QString displayText(const QVariant &value, const QLocale &locale) const override;
+    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
 };
 
-#endif // ADDFAMILYMEMBERDIALOG_H
+#endif // ACCOUNTSTATUSDELEGATE_H

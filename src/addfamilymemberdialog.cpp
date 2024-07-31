@@ -53,6 +53,11 @@ void AddFamilyMemberDialog::setMainObject(MainObject *mainObj)
     }
 }
 
+int AddFamilyMemberDialog::retirementAge() const
+{
+    return ui->retirementAgeSpin->value();
+}
+
 QString AddFamilyMemberDialog::name() const
 {
     return ui->nameEdit->text();

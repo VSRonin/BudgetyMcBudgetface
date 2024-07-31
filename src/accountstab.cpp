@@ -19,6 +19,7 @@
 #include <mainobject.h>
 #include "ownerdelegate.h"
 #include "multiplefilterproxy.h"
+#include "accountstatusdelegate.h"
 #include <blankrowproxy.h>
 class OwnerSorter : public AndFilterProxy
 {
@@ -48,6 +49,7 @@ AccountsTab::AccountsTab(QWidget *parent)
     , m_currencyDelegate(new RelationalDelegate(this))
     , m_accountTypeDelagate(new RelationalDelegate(this))
     , m_ownerDelegate(new OwnerDelegate(this))
+    , m_accountStatusDelegate(new AccountStatusDelegate(this))
     , m_filterProxy(new OwnerSorter(this))
     , m_currencyProxy(new BlankRowProxy(this))
     , m_accountTypeProxy(new BlankRowProxy(this))
@@ -67,6 +69,11 @@ AccountsTab::AccountsTab(QWidget *parent)
     connect(ui->removeAccountButton, &QPushButton::clicked, this, &AccountsTab::onRemoveAccount);
     connect(ui->accountsView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             [this]() { ui->removeAccountButton->setEnabled(!ui->accountsView->selectionModel()->selectedIndexes().isEmpty()); });
+#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
+    connect(ui->openAccountCheck, &QCheckBox::stateChanged, this, &AccountsTab::onOpenFilterChanged);
+#else
+    connect(ui->openAccountCheck, &QCheckBox::checkStateChanged, this, &AccountsTab::onOpenFilterChanged);
+#endif
 }
 
 AccountsTab::~AccountsTab()
@@ -87,6 +94,7 @@ void AccountsTab::setMainObject(MainObject *mainObj)
             ui->accountsView->setItemDelegateForColumn(MainObject::acCurrency, m_currencyDelegate);
             ui->accountsView->setItemDelegateForColumn(MainObject::acAccountType, m_accountTypeDelagate);
             ui->accountsView->setItemDelegateForColumn(MainObject::acOwner, m_ownerDelegate);
+            ui->accountsView->setItemDelegateForColumn(MainObject::acAccountStatus, m_accountStatusDelegate);
             ui->currencyFilterCombo->setModelColumn(MainObject::ccCurrency);
             ui->accountTypeFilterCombo->setModelColumn(MainObject::atcName);
             ui->ownerFilterCombo->setModelColumn(MainObject::fcName);
@@ -161,5 +169,13 @@ void AccountsTab::onOwnerFilterChanged(int newIndex)
     if (newIndex == 0)
         return m_filterProxy->removeFilterFromColumn(MainObject::acOwner);
     m_filterProxy->setRegExpFilter(
-            MainObject::acOwner, QRegularExpression(QString::number(m_object->familyModel()->index(newIndex - 1, MainObject::fcId).data().toInt())));
+                MainObject::acOwner, QRegularExpression(QString::number(m_object->familyModel()->index(newIndex - 1, MainObject::fcId).data().toInt())));
+}
+
+void AccountsTab::onOpenFilterChanged()
+{
+    if(ui->openAccountCheck->checkState()==Qt::Checked)
+        m_filterProxy->setRegExpFilter(MainObject::acAccountStatus, QRegularExpression(QStringLiteral("1")));
+    else
+        m_filterProxy->removeFilterFromColumn(MainObject::acAccountStatus);
 }

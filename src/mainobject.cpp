@@ -22,6 +22,7 @@
 #include <QQueue>
 #include <QRegularExpression>
 #ifdef QT_DEBUG
+#include <QSortFilterProxyModel>
 #    include <QSqlError>
 #endif
 
@@ -43,6 +44,7 @@ MainObject::MainObject(QObject *parent)
     : QObject(parent)
     , m_transactionsModel(new TransactionModel(this))
     , m_accountsModel(new OfflineSqliteTable(this))
+    , m_openAccountFilter(new QSortFilterProxyModel(this))
     , m_categoriesModel(new OfflineSqliteTable(this))
     , m_subcategoriesModel(new OfflineSqliteTable(this))
     , m_currenciesModel(new OfflineSqliteTable(this))
@@ -56,6 +58,9 @@ MainObject::MainObject(QObject *parent)
     m_transactionsModel->sort(tcOpDate, Qt::DescendingOrder);
     m_accountsModel->setTable(QStringLiteral("Accounts"));
     m_accountsModel->sort(acName);
+    m_openAccountFilter->setSourceModel(m_accountsModel);
+    m_openAccountFilter->setFilterKeyColumn(acAccountStatus);
+    m_openAccountFilter->setFilterFixedString(QStringLiteral("1"));
     m_categoriesModel->setTable(QStringLiteral("Categories"));
     m_categoriesModel->sort(cacName);
     m_subcategoriesModel->setTable(QStringLiteral("Subcategories"));
@@ -64,7 +69,7 @@ MainObject::MainObject(QObject *parent)
     m_movementTypesModel->setTable(QStringLiteral("MovementTypes"));
     m_accountTypesModel->setTable(QStringLiteral("AccountTypes"));
     m_familyModel->setTable(QStringLiteral("Family"));
-    m_familyModel->sort(fcName);
+    m_familyModel->sort(fcBirthday);
     connect(m_transactionsModel, &QAbstractItemModel::dataChanged, this, &MainObject::onTransactionCategoryChanged);
     connect(m_transactionsModel, &QAbstractItemModel::dataChanged, this, &MainObject::onTransactionCurrencyChanged);
     for (OfflineSqliteTable *model : {static_cast<OfflineSqliteTable *>(m_transactionsModel), m_accountsModel, m_categoriesModel,
@@ -82,6 +87,11 @@ QAbstractItemModel *MainObject::transactionsModel() const
 QAbstractItemModel *MainObject::accountsModel() const
 {
     return m_accountsModel;
+}
+
+QAbstractItemModel *MainObject::filteredAccountsModel() const
+{
+    return m_openAccountFilter;
 }
 
 QAbstractItemModel *MainObject::categoriesModel() const
@@ -114,7 +124,7 @@ QAbstractItemModel *MainObject::movementTypesModel() const
     return m_movementTypesModel;
 }
 
-bool MainObject::addFamilyMember(const QString &name, const QDate &birthday, double income, int incomeCurr)
+bool MainObject::addFamilyMember(const QString &name, const QDate &birthday, double income, int incomeCurr, int retirementAge)
 {
     if (name.isEmpty())
         return false;
@@ -125,15 +135,16 @@ bool MainObject::addFamilyMember(const QString &name, const QDate &birthday, dou
     for (int i = 0, maxI = m_familyModel->rowCount(); i < maxI; ++i)
         newID = std::max(newID, m_familyModel->index(i, fcId).data().toInt());
     QSqlQuery addFamilyMemberQuery(db);
-    addFamilyMemberQuery.prepare(QStringLiteral("INSERT INTO Family (Id, Name, Birthday, TaxableIncome, IncomeCurrency) VALUES (?,?,?,?,?)"));
+    addFamilyMemberQuery.prepare(QStringLiteral("INSERT INTO Family (Id, Name, Birthday, TaxableIncome, IncomeCurrency, RetirementAge) VALUES (?,?,?,?,?,?)"));
     addFamilyMemberQuery.addBindValue(++newID);
     addFamilyMemberQuery.addBindValue(name);
     addFamilyMemberQuery.addBindValue(birthday.toString(Qt::ISODate));
     addFamilyMemberQuery.addBindValue(income);
     addFamilyMemberQuery.addBindValue(incomeCurr);
+    addFamilyMemberQuery.addBindValue(retirementAge);
     if (!addFamilyMemberQuery.exec()) {
 #ifdef QT_DEBUG
-        qDebug() << addFamilyMemberQuery.lastQuery() << addFamilyMemberQuery.lastError().text();
+        qDebug() << addFamilyMemberQuery.executedQuery() << addFamilyMemberQuery.lastError().text();
 #endif
         return false;
     }
@@ -163,7 +174,7 @@ bool MainObject::removeFamilyMembers(const QList<int> &ids)
                                       + QStringLiteral("%'"));
         if (!impactedAccountsQuery.exec()) {
 #ifdef QT_DEBUG
-            qDebug() << impactedAccountsQuery.lastQuery() << impactedAccountsQuery.lastError().text();
+            qDebug() << impactedAccountsQuery.executedQuery() << impactedAccountsQuery.lastError().text();
 #endif
             Q_ASSUME(db.rollback());
             return false;
@@ -192,7 +203,7 @@ bool MainObject::removeFamilyMembers(const QList<int> &ids)
         updateAccountQuery.addBindValue(i.key());
         if (!updateAccountQuery.exec()) {
 #ifdef QT_DEBUG
-            qDebug() << updateAccountQuery.lastQuery() << updateAccountQuery.lastError().text();
+            qDebug() << updateAccountQuery.executedQuery() << updateAccountQuery.lastError().text();
 #endif
             Q_ASSUME(db.rollback());
             return false;
@@ -209,7 +220,7 @@ bool MainObject::removeFamilyMembers(const QList<int> &ids)
         removeFamilyQuery.prepare(QStringLiteral("DELETE FROM Family WHERE Id IN (") + filterString + QLatin1Char(')'));
         if (!removeFamilyQuery.exec()) {
 #ifdef QT_DEBUG
-            qDebug() << removeFamilyQuery.lastQuery() << removeFamilyQuery.lastError().text();
+            qDebug() << removeFamilyQuery.executedQuery() << removeFamilyQuery.lastError().text();
 #endif
             Q_ASSUME(db.rollback());
             return false;
@@ -243,7 +254,7 @@ bool MainObject::addAccount(const QString &name, const QString &owner, int curr,
     addAccountQuery.addBindValue(typ);
     if (!addAccountQuery.exec()) {
 #ifdef QT_DEBUG
-        qDebug() << addAccountQuery.lastQuery() << addAccountQuery.lastError().text();
+        qDebug() << addAccountQuery.executedQuery() << addAccountQuery.lastError().text();
 #endif
         return false;
     }
@@ -277,7 +288,7 @@ bool MainObject::removeAccounts(const QList<int> &ids, bool transaction)
         removeTransactionsQuery.prepare(QStringLiteral("DELETE FROM Transactions WHERE Account IN (") + filterString + QLatin1Char(')'));
         if (!removeTransactionsQuery.exec()) {
 #ifdef QT_DEBUG
-            qDebug() << removeTransactionsQuery.lastQuery() << removeTransactionsQuery.lastError().text();
+            qDebug() << removeTransactionsQuery.executedQuery() << removeTransactionsQuery.lastError().text();
 #endif
             Q_ASSUME(db.rollback());
             return false;
@@ -288,7 +299,7 @@ bool MainObject::removeAccounts(const QList<int> &ids, bool transaction)
         removeAccountQuery.prepare(QStringLiteral("DELETE FROM Accounts WHERE Id IN (") + filterString + QLatin1Char(')'));
         if (!removeAccountQuery.exec()) {
 #ifdef QT_DEBUG
-            qDebug() << removeAccountQuery.lastQuery() << removeAccountQuery.lastError().text();
+            qDebug() << removeAccountQuery.executedQuery() << removeAccountQuery.lastError().text();
 #endif
             Q_ASSUME(db.rollback());
             return false;
@@ -373,7 +384,7 @@ bool MainObject::removeTransactions(const QList<int> &ids)
     removeTransactionsQuery.prepare(QStringLiteral("DELETE FROM Transactions WHERE Id IN (") + filterString + QLatin1Char(')'));
     if (!removeTransactionsQuery.exec()) {
 #ifdef QT_DEBUG
-        qDebug() << removeTransactionsQuery.lastQuery() << removeTransactionsQuery.lastError().text();
+        qDebug() << removeTransactionsQuery.executedQuery() << removeTransactionsQuery.lastError().text();
 #endif
         return false;
     }
@@ -531,7 +542,7 @@ QDate MainObject::lastTransactionDate() const
     lastTransactionQuery.prepare(QStringLiteral("SELECT OperationDate FROM Transactions ORDER BY OperationDate DESC LIMIT 1"));
     if (!lastTransactionQuery.exec()) {
 #ifdef QT_DEBUG
-        qDebug() << lastTransactionQuery.lastQuery() << lastTransactionQuery.lastError().text();
+        qDebug() << lastTransactionQuery.executedQuery() << lastTransactionQuery.lastError().text();
 #endif
         return QDate();
     }

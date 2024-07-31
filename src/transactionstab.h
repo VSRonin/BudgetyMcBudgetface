@@ -37,6 +37,7 @@ public:
 private:
     void onShowWIPChanged();
     void onFilterChanged();
+    void onCategoryFilterChanged();
     void importStatement(MainObject::ImportFormats format);
     void onRemoveTransactions();
     void refreshLastUpdate();
@@ -51,6 +52,9 @@ private:
     IsoDateDelegate *m_opDateDelegate;
     BlankRowProxy *m_currencyProxy;
     BlankRowProxy *m_accountProxy;
+    BlankRowProxy *m_categoryProxy;
+    BlankRowProxy *m_subcategoryProxy;
+    QSortFilterProxyModel* m_subcategoryFilter;
 
     Ui::TransactionsTab *ui;
 };

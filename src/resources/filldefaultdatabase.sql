@@ -9,21 +9,25 @@ CREATE TABLE ExchangeRates (
 CREATE TABLE AccountTypes (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL);
 CREATE TABLE Family (
     Id INTEGER PRIMARY KEY,
-    Name TEXT NOT NULL,
+    Name TEXT NOT NULL UNIQUE,
     Birthday TEXT NOT NULL,
     TaxableIncome REAL NOT NULL,
     IncomeCurrency INTEGER NOT NULL,
+    RetirementAge INTEGER DEFAULT 67 NOT NULL,
     FOREIGN KEY (IncomeCurrency) REFERENCES Currencies (Id)
 );
 CREATE TABLE Accounts (
     Id INTEGER PRIMARY KEY,
-    Name TEXT NOT NULL,
+    Name TEXT NOT NULL UNIQUE,
     Owner TEXT NOT NULL,
     Currency INTEGER NOT NULL,
     AccountType INTEGER NOT NULL,
+    AccountStatus INTEGER DEFAULT 1 NOT NULL,
     FOREIGN KEY (Currency) REFERENCES Currencies (Id),
-    FOREIGN KEY (AccountType) REFERENCES AccountTypes (Id)
+    FOREIGN KEY (AccountType) REFERENCES AccountTypes (Id),
+    FOREIGN KEY (AccountStatus) REFERENCES AccountStatuses (Id)
 );
+CREATE TABLE AccountStatuses (Id INTEGER PRIMARY KEY);
 CREATE TABLE MovementTypes (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL);
 CREATE TABLE Categories (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL);
 CREATE TABLE Subcategories (
@@ -53,6 +57,7 @@ CREATE TABLE Transactions (
     FOREIGN KEY (MovementType) REFERENCES MovementTypes (Id),
     FOREIGN KEY (DestinationAccount) REFERENCES Accounts (Id)
 );
+INSERT INTO AccountStatuses (Id) VALUES (1),(0);
 INSERT INTO Currencies (Id, Currency) VALUES (1,'GBP'),(2,'EUR'),(3,'USD'),(4,'CHF');
 INSERT INTO ExchangeRates (FromCurrency, ToCurrency, ExchangeRate) VALUES
     ('GBP','EUR',1.0),

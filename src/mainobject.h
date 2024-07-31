@@ -15,6 +15,7 @@
 #define MAINOBJECT_H
 #include <QObject>
 #include <QDate>
+class QSortFilterProxyModel;
 class OfflineSqliteTable;
 class QAbstractItemModel;
 class QFile;
@@ -24,7 +25,7 @@ class MainObject : public QObject
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(MainObject)
 public:
-    enum AccountsModelColumn { acId, acName, acOwner, acCurrency, acAccountType };
+    enum AccountsModelColumn { acId, acName, acOwner, acCurrency, acAccountType, acAccountStatus };
     enum TransactionModelColumn {
         tcId,
         tcAccount,
@@ -51,13 +52,14 @@ public:
     bool createBlankBudget();
     QAbstractItemModel *transactionsModel() const;
     QAbstractItemModel *accountsModel() const;
+    QAbstractItemModel *filteredAccountsModel() const;
     QAbstractItemModel *categoriesModel() const;
     QAbstractItemModel *currenciesModel() const;
     QAbstractItemModel *movementTypesModel() const;
     QAbstractItemModel *accountTypesModel() const;
     QAbstractItemModel *familyModel() const;
     QAbstractItemModel *subcategoriesModel() const;
-    bool addFamilyMember(const QString &name, const QDate &birthday, double income, int incomeCurr);
+    bool addFamilyMember(const QString &name, const QDate &birthday, double income, int incomeCurr, int retirementAge);
     bool removeFamilyMembers(const QList<int> &ids);
     bool addAccount(const QString &name, const QString &owner, int curr, int typ);
     bool removeAccounts(const QList<int> &ids);
@@ -101,6 +103,7 @@ private:
     void onTransactionCurrencyChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     TransactionModel *m_transactionsModel;
     OfflineSqliteTable *m_accountsModel;
+    QSortFilterProxyModel* m_openAccountFilter;
     OfflineSqliteTable *m_categoriesModel;
     OfflineSqliteTable *m_subcategoriesModel;
     OfflineSqliteTable *m_currenciesModel;

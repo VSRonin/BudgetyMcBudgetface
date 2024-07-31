@@ -19,6 +19,7 @@ namespace Ui {
 class AccountsTab;
 }
 class RelationalDelegate;
+class AccountStatusDelegate;
 class MainObject;
 class OwnerDelegate;
 class AndFilterProxy;
@@ -39,11 +40,13 @@ private:
     void onCurrencyFilterChanged(int newIndex);
     void onAccountTypeFilterChanged(int newIndex);
     void onOwnerFilterChanged(int newIndex);
+    void onOpenFilterChanged();
     MainObject *m_object;
     Ui::AccountsTab *ui;
     RelationalDelegate *m_currencyDelegate;
     RelationalDelegate *m_accountTypeDelagate;
     OwnerDelegate *m_ownerDelegate;
+    AccountStatusDelegate* m_accountStatusDelegate;
     AndFilterProxy *m_filterProxy;
     BlankRowProxy *m_currencyProxy;
     BlankRowProxy *m_accountTypeProxy;
