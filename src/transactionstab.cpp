@@ -229,12 +229,14 @@ void TransactionsTab::onFilterChanged()
 
 void TransactionsTab::onCategoryFilterChanged()
 {
-    if (ui->categoryFilterCombo->currentIndex() == 0){
+    if (ui->categoryFilterCombo->currentIndex() == 0) {
         ui->subcategoryFilterCombo->setCurrentIndex(0);
         ui->subcategoryFilterCombo->setEnabled(false);
-    }
-    else{
-        m_subcategoryFilter->setFilterRegularExpression(QLatin1Char('^')+QString::number(m_object->categoriesModel()->index(ui->categoryFilterCombo->currentIndex() - 1, MainObject::cacId).data().toInt())+QLatin1Char('$'));
+    } else {
+        m_subcategoryFilter->setFilterRegularExpression(
+                QLatin1Char('^')
+                + QString::number(m_object->categoriesModel()->index(ui->categoryFilterCombo->currentIndex() - 1, MainObject::cacId).data().toInt())
+                + QLatin1Char('$'));
         ui->subcategoryFilterCombo->setEnabled(true);
     }
 }

@@ -169,12 +169,12 @@ void AccountsTab::onOwnerFilterChanged(int newIndex)
     if (newIndex == 0)
         return m_filterProxy->removeFilterFromColumn(MainObject::acOwner);
     m_filterProxy->setRegExpFilter(
-                MainObject::acOwner, QRegularExpression(QString::number(m_object->familyModel()->index(newIndex - 1, MainObject::fcId).data().toInt())));
+            MainObject::acOwner, QRegularExpression(QString::number(m_object->familyModel()->index(newIndex - 1, MainObject::fcId).data().toInt())));
 }
 
 void AccountsTab::onOpenFilterChanged()
 {
-    if(ui->openAccountCheck->checkState()==Qt::Checked)
+    if (ui->openAccountCheck->checkState() == Qt::Checked)
         m_filterProxy->setRegExpFilter(MainObject::acAccountStatus, QRegularExpression(QStringLiteral("1")));
     else
         m_filterProxy->removeFilterFromColumn(MainObject::acAccountStatus);

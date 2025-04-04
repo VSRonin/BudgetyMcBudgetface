@@ -88,7 +88,7 @@ signals:
     void addTransactionSkippedDuplicates(int count);
 
 private:
-    double getExchangeRate(int fromCurrencyID, int toCurrencyID, double defaultVal=1.0) const;
+    double getExchangeRate(int fromCurrencyID, int toCurrencyID, double defaultVal = 1.0) const;
     int forcedSubcategory(int category) const;
     int movementTypeForInternalTransfer(int category, double amount) const;
     bool addTransactions(int account, const QList<QDate> &opDt, const QList<int> &curr, const QList<double> &amount, const QList<QString> &payType,
@@ -103,7 +103,7 @@ private:
     void onTransactionCurrencyChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     TransactionModel *m_transactionsModel;
     OfflineSqliteTable *m_accountsModel;
-    QSortFilterProxyModel* m_openAccountFilter;
+    QSortFilterProxyModel *m_openAccountFilter;
     OfflineSqliteTable *m_categoriesModel;
     OfflineSqliteTable *m_subcategoriesModel;
     OfflineSqliteTable *m_currenciesModel;

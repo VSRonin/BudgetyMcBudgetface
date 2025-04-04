@@ -54,7 +54,7 @@ private:
     BlankRowProxy *m_accountProxy;
     BlankRowProxy *m_categoryProxy;
     BlankRowProxy *m_subcategoryProxy;
-    QSortFilterProxyModel* m_subcategoryFilter;
+    QSortFilterProxyModel *m_subcategoryFilter;
 
     Ui::TransactionsTab *ui;
 };

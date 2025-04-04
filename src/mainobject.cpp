@@ -22,7 +22,7 @@
 #include <QQueue>
 #include <QRegularExpression>
 #ifdef QT_DEBUG
-#include <QSortFilterProxyModel>
+#    include <QSortFilterProxyModel>
 #    include <QSqlError>
 #endif
 
@@ -135,7 +135,8 @@ bool MainObject::addFamilyMember(const QString &name, const QDate &birthday, dou
     for (int i = 0, maxI = m_familyModel->rowCount(); i < maxI; ++i)
         newID = std::max(newID, m_familyModel->index(i, fcId).data().toInt());
     QSqlQuery addFamilyMemberQuery(db);
-    addFamilyMemberQuery.prepare(QStringLiteral("INSERT INTO Family (Id, Name, Birthday, TaxableIncome, IncomeCurrency, RetirementAge) VALUES (?,?,?,?,?,?)"));
+    addFamilyMemberQuery.prepare(
+            QStringLiteral("INSERT INTO Family (Id, Name, Birthday, TaxableIncome, IncomeCurrency, RetirementAge) VALUES (?,?,?,?,?,?)"));
     addFamilyMemberQuery.addBindValue(++newID);
     addFamilyMemberQuery.addBindValue(name);
     addFamilyMemberQuery.addBindValue(birthday.toString(Qt::ISODate));
@@ -337,7 +338,8 @@ void MainObject::onTransactionCategoryChanged(const QModelIndex &topLeft, const 
     }
 }
 
-double MainObject::getExchangeRate(int fromCurrencyID, int toCurrencyID, double defaultVal) const{
+double MainObject::getExchangeRate(int fromCurrencyID, int toCurrencyID, double defaultVal) const
+{
     QSqlDatabase db = openDb();
     if (db.isOpen()) {
         QSqlQuery getExchangeRateQuery(db);
@@ -365,7 +367,7 @@ void MainObject::onTransactionCurrencyChanged(const QModelIndex &topLeft, const 
         if (curData.toInt() == m_baseCurrency)
             m_transactionsModel->setData(topLeft.sibling(i, tcExchangeRate), QVariant());
         else
-            m_transactionsModel->setData(topLeft.sibling(i, tcExchangeRate), getExchangeRate(curData.toInt(),m_baseCurrency));
+            m_transactionsModel->setData(topLeft.sibling(i, tcExchangeRate), getExchangeRate(curData.toInt(), m_baseCurrency));
     }
 }
 

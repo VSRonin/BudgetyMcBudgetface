@@ -46,7 +46,7 @@ private:
     RelationalDelegate *m_currencyDelegate;
     RelationalDelegate *m_accountTypeDelagate;
     OwnerDelegate *m_ownerDelegate;
-    AccountStatusDelegate* m_accountStatusDelegate;
+    AccountStatusDelegate *m_accountStatusDelegate;
     AndFilterProxy *m_filterProxy;
     BlankRowProxy *m_currencyProxy;
     BlankRowProxy *m_accountTypeProxy;

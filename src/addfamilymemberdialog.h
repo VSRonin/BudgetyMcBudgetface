@@ -32,6 +32,7 @@ public:
     double annualIncome() const;
     int incomeCurrency() const;
     int retirementAge() const;
+
 private:
     void checkOkEnabled();
     MainObject *m_object;

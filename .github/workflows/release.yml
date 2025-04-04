@@ -13,7 +13,7 @@ jobs:
           max-parallel: 1
           matrix:
               qt_version:
-                - { qt_ver: 6.7.0}
+                - { qt_ver: 6.8.2}
               platforms:
                 - { os: windows-latest, generator: "NMake Makefiles", debug_postfix: d, compression: ZIP, friendly_name: MSVC }
         steps:

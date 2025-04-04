@@ -14,13 +14,11 @@
 #include <QComboBox>
 AccountStatusDelegate::AccountStatusDelegate(QObject *parent)
     : QStyledItemDelegate(parent)
-{
-
-}
+{ }
 
 QString AccountStatusDelegate::displayText(const QVariant &value, const QLocale &locale) const
 {
-    if(value.toInt()==1)
+    if (value.toInt() == 1)
         return tr("Open");
     return tr("Closed");
 }
@@ -30,8 +28,8 @@ QWidget *AccountStatusDelegate::createEditor(QWidget *parent, const QStyleOption
     Q_UNUSED(option)
     Q_UNUSED(index)
     QComboBox *result = new QComboBox(parent);
-    result->addItem(tr("Open"),1);
-    result->addItem(tr("Closed"),0);
+    result->addItem(tr("Open"), 1);
+    result->addItem(tr("Closed"), 0);
     return result;
 }
 
@@ -46,5 +44,5 @@ void AccountStatusDelegate::setModelData(QWidget *editor, QAbstractItemModel *mo
 {
     QComboBox *result = qobject_cast<QComboBox *>(editor);
     Q_ASSERT(result);
-    model->setData(index,result->currentData().toInt());
+    model->setData(index, result->currentData().toInt());
 }

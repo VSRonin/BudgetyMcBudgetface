@@ -27,16 +27,16 @@ jobs:
           fail-fast: false
           matrix:
               qt_version:
-                - { qt_ver: 6.5.3 }
+                - { qt_ver: 6.8.2 }
               platforms:
                 - { os: windows-latest, generator: "NMake Makefiles", friendly_name: MSVC }
         steps:
           - name: Install Qt
-            uses: jurplel/install-qt-action@v3
+            uses: jurplel/install-qt-action@v4
             with:
               version: ${{ matrix.qt_version.qt_ver }}
           - name: Install QtModelUtilities
-            uses: robinraju/release-downloader@v1.9
+            uses: robinraju/release-downloader@v1.12
             with: 
               repository: "VSRonin/QtModelUtilities"
               latest: true
@@ -61,7 +61,8 @@ jobs:
           - name: Git Checkout
             uses: actions/checkout@v4
             with:
-              fetch-depth: 0
+              fetch-depth: 1
+              fetch-tags: true
           - name: Generate Default DB File
             shell: pwsh
             run: |
