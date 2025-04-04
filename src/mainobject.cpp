@@ -176,7 +176,7 @@ bool MainObject::removeFamilyMembers(const QList<int> &ids)
 #ifdef QT_DEBUG
             qDebug() << impactedAccountsQuery.executedQuery() << impactedAccountsQuery.lastError().text();
 #endif
-            Q_ASSUME(db.rollback());
+            CHECK_TRUE(db.rollback());
             return false;
         }
         while (impactedAccountsQuery.next()) {
@@ -205,13 +205,13 @@ bool MainObject::removeFamilyMembers(const QList<int> &ids)
 #ifdef QT_DEBUG
             qDebug() << updateAccountQuery.executedQuery() << updateAccountQuery.lastError().text();
 #endif
-            Q_ASSUME(db.rollback());
+            CHECK_TRUE(db.rollback());
             return false;
         }
     }
     if (!accountsToRemove.isEmpty()) {
         if (!removeAccounts(accountsToRemove, false)) {
-            Q_ASSUME(db.rollback());
+            CHECK_TRUE(db.rollback());
             return false;
         }
     }
@@ -222,7 +222,7 @@ bool MainObject::removeFamilyMembers(const QList<int> &ids)
 #ifdef QT_DEBUG
             qDebug() << removeFamilyQuery.executedQuery() << removeFamilyQuery.lastError().text();
 #endif
-            Q_ASSUME(db.rollback());
+            CHECK_TRUE(db.rollback());
             return false;
         }
     }
@@ -290,7 +290,7 @@ bool MainObject::removeAccounts(const QList<int> &ids, bool transaction)
 #ifdef QT_DEBUG
             qDebug() << removeTransactionsQuery.executedQuery() << removeTransactionsQuery.lastError().text();
 #endif
-            Q_ASSUME(db.rollback());
+            CHECK_TRUE(db.rollback());
             return false;
         }
     }
@@ -301,7 +301,7 @@ bool MainObject::removeAccounts(const QList<int> &ids, bool transaction)
 #ifdef QT_DEBUG
             qDebug() << removeAccountQuery.executedQuery() << removeAccountQuery.lastError().text();
 #endif
-            Q_ASSUME(db.rollback());
+            CHECK_TRUE(db.rollback());
             return false;
         }
     }
@@ -738,7 +738,7 @@ bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QL
 #ifdef QT_DEBUG
                 qDebug() << duplicateQuery.executedQuery() << duplicateQuery.lastError().text();
 #endif
-                Q_ASSUME(db.rollback());
+                CHECK_TRUE(db.rollback());
                 return false;
             }
             if (duplicateQuery.next())
@@ -794,7 +794,7 @@ bool MainObject::addTransactions(int account, const QList<QDate> &opDt, const QL
 #ifdef QT_DEBUG
             qDebug() << addTransactionQuery.executedQuery() << addTransactionQuery.lastError().text();
 #endif
-            Q_ASSUME(db.rollback());
+            CHECK_TRUE(db.rollback());
             return false;
         }
     }

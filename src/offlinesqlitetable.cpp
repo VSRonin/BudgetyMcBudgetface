@@ -77,9 +77,9 @@ bool OfflineSqliteTable::removeRows(int row, int count, const QModelIndex &paren
 #endif
         return false;
     }
-    Q_ASSUME(db.rollback());
+    CHECK_TRUE(db.rollback());
     beginRemoveRows(QModelIndex(), row, row + count - 1);
-    Q_ASSUME(removeQuery.exec());
+    CHECK_TRUE(removeQuery.exec());
     endRemoveRows();
     return true;
 }

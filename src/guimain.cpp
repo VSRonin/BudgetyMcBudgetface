@@ -17,6 +17,8 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     Q_INIT_RESOURCE(backendresources);
+    Q_INIT_RESOURCE(uiresources);
+    app.setStyle(QStringLiteral("fusion"));
     MainWindow w;
     w.show();
     QObject::connect(&app, &QApplication::lastWindowClosed, []() { discardDbFile(); });

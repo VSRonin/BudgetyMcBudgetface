@@ -18,7 +18,7 @@ QString makeStandardLocation(QStandardPaths::StandardLocation loc)
 {
     const QString stdLocation = QStandardPaths::writableLocation(loc);
     Q_ASSERT(!stdLocation.isEmpty());
-    Q_ASSUME(QDir().mkpath(stdLocation));
+    CHECK_TRUE(QDir().mkpath(stdLocation));
     return stdLocation;
 }
 
@@ -60,7 +60,7 @@ void discardDbFile()
     closeDb();
     const QString dbFileName = dbFilePath();
     if (QFile::exists(dbFileName))
-        Q_ASSUME(QFile::remove(dbFileName));
+        CHECK_TRUE(QFile::remove(dbFileName));
 }
 void closeDb()
 {
@@ -75,6 +75,6 @@ void closeDb()
 void createDbFile()
 {
     const QString destinationDB = dbFilePath();
-    Q_ASSUME(QFile::copy(QStringLiteral(":/db/defaultdb.sqlite"), destinationDB));
-    Q_ASSUME(QFile::setPermissions(destinationDB, QFileDevice::ReadOwner | QFileDevice::WriteOwner));
+    CHECK_TRUE(QFile::copy(QStringLiteral(":/db/defaultdb.sqlite"), destinationDB));
+    CHECK_TRUE(QFile::setPermissions(destinationDB, QFileDevice::ReadOwner | QFileDevice::WriteOwner));
 }

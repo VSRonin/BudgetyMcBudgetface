@@ -107,7 +107,7 @@ INSERT INTO Subcategories (Id, Category, Name, NeedWantSave) VALUES
     (5,4,'Drugs',1),
     (6,4,'Insurance',1),
     (7,4,'Optics',1),
-    (8,5,'Council Tax',1),
+    (8,5,'Cleaning',2)
     (9,5,'Rent',1),
     (10,5,'Maintenance',1),
     (11,6,'Insurance',1),
@@ -161,6 +161,8 @@ INSERT INTO Subcategories (Id, Category, Name, NeedWantSave) VALUES
     (59,20,'Fuel',1),
     (60,20,'Insurance',1),
     (61,20,'Repair',1),
-    (62,20,'Tax',1)
+    (62,20,'Tax',1),
+    (63,8,'Council Tax',1),
+    (64,1,'Investment Income',1)
 ;
 COMMIT;

@@ -11,6 +11,7 @@
    limitations under the License.
 \****************************************************************************/
 #include "blankrowproxy.h"
+#include "globals.h"
 #include <QSize>
 BlankRowProxy::BlankRowProxy(QObject *parent)
     : QAbstractProxyModel(parent)
@@ -184,7 +185,7 @@ void BlankRowProxy::setSourceModel(QAbstractItemModel *model)
     if (model == sourceModel())
         return;
     beginResetModel();
-    for (const auto &conn : qAsConst(m_sourceConnections))
+    for (const auto &conn : std::as_const(m_sourceConnections))
         QObject::disconnect(conn);
     m_sourceConnections.clear();
     QAbstractProxyModel::setSourceModel(model);
@@ -381,7 +382,7 @@ void BlankRowProxy::onColumnsAboutToBeInserted(const QModelIndex &parent, int fi
 void BlankRowProxy::onColumnsAboutToBeMoved(const QModelIndex &sourceParent, int sourceStart, int sourceEnd, const QModelIndex &destinationParent,
                                             int destinationColumn)
 {
-    Q_ASSUME(beginMoveColumns(mapFromSource(sourceParent), sourceStart, sourceEnd, mapFromSource(destinationParent), destinationColumn));
+    CHECK_TRUE(beginMoveColumns(mapFromSource(sourceParent), sourceStart, sourceEnd, mapFromSource(destinationParent), destinationColumn));
 }
 
 void BlankRowProxy::onColumnsAboutToBeRemoved(const QModelIndex &parent, int first, int last)

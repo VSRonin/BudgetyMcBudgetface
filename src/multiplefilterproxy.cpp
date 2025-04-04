@@ -25,7 +25,7 @@ void MultipleFilterProxy::setSourceModel(QAbstractItemModel *mdl)
 {
     if (sourceModel() == mdl)
         return;
-    for (const auto &conn : qAsConst(m_sourceConnections))
+    for (const auto &conn : std::as_const(m_sourceConnections))
         QObject::disconnect(conn);
     m_sourceConnections.clear();
     if (mdl) {

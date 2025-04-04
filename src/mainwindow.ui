@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Budgety McBudgetface [*]</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="uiresources.qrc">
+    <normaloff>:/icons/logo.png</normaloff>:/icons/logo.png</iconset>
+  </property>
   <widget class="CentralWidget" name="centralwidget"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -109,6 +113,8 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="uiresources.qrc"/>
+ </resources>
  <connections/>
 </ui>

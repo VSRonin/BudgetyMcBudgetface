@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 find_package(Qt6 6.3 COMPONENTS Widgets Gui Core Sql REQUIRED)
 find_package(QtModelUtilities REQUIRED)
-set(ui_SRCS 
+set(ui_SRCS
+    uiresources.qrc
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui

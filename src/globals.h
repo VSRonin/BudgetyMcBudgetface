@@ -17,6 +17,11 @@
 #include <QObject>
 #include <QString>
 #include <QSqlDatabase>
+inline bool check_true_helper(bool cond) noexcept { return cond; }
+#define CHECK_TRUE(Expr) \
+    [] (bool valueOfExpression) {\
+        Q_ASSERT_X(valueOfExpression, "CHECK_TRUE()", "Assumption in CHECK_TRUE(\"" #Expr "\") was not correct");\
+    }(check_true_helper(Expr))
 void discardDbFile();
 void createDbFile();
 QSqlDatabase openDb();
